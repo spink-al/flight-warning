@@ -17,3 +17,5 @@ Windows:
 Linux:
 
 nc (ip of dump1090 host) 30003 | python flight_warning_winlin_term.py
+
+https://github.com/spink-al/flight-warning/blob/master/Capture.JPG
