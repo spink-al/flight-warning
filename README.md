@@ -10,6 +10,10 @@ a dump1090 stream detects an aircraft within a set distance of a geographic poin
 Copyright (C) 2015 Darren Enns <darethehair@gmail.com>
 
 # flight_warning_winlin_term.py
+
+- Color console realtime display of Az/Alt of airplanes
+- Sun/Moon transits prediction
+
 Needs python ephem:
 
 pip install ephem
