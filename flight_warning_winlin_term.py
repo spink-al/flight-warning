@@ -664,7 +664,7 @@ def tabela():
 		lastline+= " --- "+ str(pressure)+"hPa"
 		print lastline
 
-	return moon_alt, moon_az, sun_alt, sun_az ## przeniesc na koniec, moonaltyazy w while, sleep na start albo startdatetime 1970
+	return moon_alt, moon_az, sun_alt, sun_az 
 
 moon_alt, moon_az, sun_alt, sun_az = tabela()
 #
