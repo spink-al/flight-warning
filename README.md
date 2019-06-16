@@ -1,4 +1,5 @@
-# Original idea: flight-warning by Darren Enns <darethehair@gmail.com>
+# Original idea: 
+flight-warning by Darren Enns <darethehair@gmail.com>
 
 # flight_warning_winlin_term.py
 
