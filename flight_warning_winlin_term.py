@@ -583,10 +583,7 @@ def tabela():
 
 						wiersz +=str(diff_seconds)
 						print wiersz
-						if (-transit_separation_GREENALERT_FG < separation_deg2 < transit_separation_GREENALERT_FG) or (-transit_separation_GREENALERT_FG < separation_deg < transit_separation_GREENALERT_FG):
-							with open('/home/pi/work/arch/AS/_A_Transit/tr.txt','a') as tra_txt:
-								trans_wiersz = str(plane_dict[pentry][0])+wiersz+'\n'
-								tra_txt.write(str(trans_wiersz))
+
 						
 				else:
 					if plane_dict[pentry][17] != "":
