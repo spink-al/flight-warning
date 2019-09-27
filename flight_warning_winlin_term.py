@@ -30,7 +30,9 @@ Copyright (C) 2015 Darren Enns <darethehair@gmail.com>
 =======================================================================
 Changes:
 =======================================================================
-
+v0.2 
+- try/except for plane lat/lon in MSG 3
+v0.1
 - Color console realtime display Az/Alt
 - Sun/Moon transits prediction
 
@@ -781,63 +783,72 @@ while True:
 			elevation_units = "ft"
 			distance_units = "mi"
 
-
-			plane_lat = float(parts[14])
-			plane_lon = float(parts[15])
-			
-			distance = round(haversine((my_lat, my_lon), (plane_lat, plane_lon)),1)
-			azimuth = atan2(sin(radians(plane_lon-my_lon))*cos(radians(plane_lat)), cos(radians(my_lat))*sin(radians(plane_lat))-sin(radians(my_lat))*cos(radians(plane_lat))*cos(radians(plane_lon-my_lon)))
-			azimuth = round(((degrees(azimuth) + 360) % 360),1)
-			if distance == 0:
-				distance = 0.01	
-			altitude = degrees(atan((elevation - my_elevation)/(distance*1000))) # distance converted from kilometers to meters to match elevation
-			altitude = round(altitude,1)
-			
-			
-			if (icao not in plane_dict): 
-				plane_dict[icao] = [date_time_local, "", plane_lat, plane_lon, elevation, distance, azimuth, altitude, "", "", distance, "", "", "", "", [], [], "", "", "", "", "", "", "", "", "", "", "", ""]
-				plane_dict[icao][15] = []
-				plane_dict[icao][16] = []	
-				plane_dict[icao][15].append(azimuth)
-				plane_dict[icao][16].append(altitude)				
-			else:
-				#
-				# figure out if plane is approaching/holding/receding
-				#
-				min_distance = plane_dict[icao][10]
-
-				if (distance < min_distance):
-					plane_dict[icao][9] = "APPROACHING"
-					plane_dict[icao][10] = distance
-				elif (distance > min_distance):
-					plane_dict[icao][9] = "RECEDING"
-				else:
-					plane_dict[icao][9] = "HOLDING"
-
-				plane_dict[icao][0] = date_time_local
-				plane_dict[icao][2] = plane_lat
-				plane_dict[icao][3] = plane_lon
-				plane_dict[icao][4] = elevation 
-				plane_dict[icao][5] = distance 
-				plane_dict[icao][6] = azimuth 
-				plane_dict[icao][7] = altitude 
-				
-				
-				if plane_dict[icao][17] == '':
-				    plane_dict[icao][17] = date_time_local
-				
-				then = plane_dict[icao][17]
-				now = datetime.datetime.now()
-				diff_seconds = (now - then).total_seconds()
-				if (diff_seconds > 6):
+			try:
+				plane_lat = float(parts[14])
+			except:
+				plane_lat = ''
+				#pass
+			try:
+				plane_lon = float(parts[15])
+			except:
+				plane_lon = ''
+				#pass
+			if not plane_lat == '':
+				if not plane_lon == '':
+																																																	  
+					distance = round(haversine((my_lat, my_lon), (plane_lat, plane_lon)),1)
+					azimuth = atan2(sin(radians(plane_lon-my_lon))*cos(radians(plane_lat)), cos(radians(my_lat))*sin(radians(plane_lat))-sin(radians(my_lat))*cos(radians(plane_lat))*cos(radians(plane_lon-my_lon)))
+					azimuth = round(((degrees(azimuth) + 360) % 360),1)
+					if distance == 0:
+						distance = 0.01	
+					altitude = degrees(atan((elevation - my_elevation)/(distance*1000))) # distance converted from kilometers to meters to match elevation
+					altitude = round(altitude,1)
 					
-					plane_dict[icao][17] = date_time_local
+					
+					if (icao not in plane_dict): 
+						plane_dict[icao] = [date_time_local, "", plane_lat, plane_lon, elevation, distance, azimuth, altitude, "", "", distance, "", "", "", "", [], [], "", "", "", "", "", "", "", "", "", "", "", ""]
+						plane_dict[icao][15] = []
+						plane_dict[icao][16] = []	
+						plane_dict[icao][15].append(azimuth)
+						plane_dict[icao][16].append(altitude)				
+					else:
+						#
+						# figure out if plane is approaching/holding/receding
+						#
+						min_distance = plane_dict[icao][10]
 
-					poz_az = str(plane_dict[icao][6])
-					poz_alt = str(plane_dict[icao][7])
+						if (distance < min_distance):
+							plane_dict[icao][9] = "APPROACHING"
+							plane_dict[icao][10] = distance
+						elif (distance > min_distance):
+							plane_dict[icao][9] = "RECEDING"
+						else:
+							plane_dict[icao][9] = "HOLDING"
 
-					plane_dict[icao][15].append(poz_az)
-					plane_dict[icao][16].append(poz_alt)				
+						plane_dict[icao][0] = date_time_local
+						plane_dict[icao][2] = plane_lat
+						plane_dict[icao][3] = plane_lon
+						plane_dict[icao][4] = elevation 
+						plane_dict[icao][5] = distance 
+						plane_dict[icao][6] = azimuth 
+						plane_dict[icao][7] = altitude 
+						
+						
+						if plane_dict[icao][17] == '':
+							plane_dict[icao][17] = date_time_local
+						
+						then = plane_dict[icao][17]
+						now = datetime.datetime.now()
+						diff_seconds = (now - then).total_seconds()
+						if (diff_seconds > 6):
+							
+							plane_dict[icao][17] = date_time_local
+
+							poz_az = str(plane_dict[icao][6])
+							poz_alt = str(plane_dict[icao][7])
+
+							plane_dict[icao][15].append(poz_az)
+							plane_dict[icao][16].append(poz_alt)
 		#		
 		# if matched record between type 1/3  occurs, log stats to stdout and also email if entering/leaving detection zone
 		#
@@ -957,3 +968,4 @@ while True:
 
 	moon_alt, moon_az, sun_alt, sun_az = tabela()
 	clean_dict()
+																							
