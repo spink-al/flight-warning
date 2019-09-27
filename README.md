@@ -6,6 +6,8 @@ flight-warning by Darren Enns <darethehair@gmail.com>
 - Color console realtime display of Az/Alt of airplanes
 - Sun/Moon transits prediction
 
+## Needs python 2.7
+
 ## Needs python ephem:
 
 pip install ephem
