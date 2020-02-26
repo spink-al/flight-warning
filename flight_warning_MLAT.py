@@ -67,7 +67,7 @@ if os.name == 'nt':
 else:
     print(os.name)
     metar_path = '/home/pi/work/arch/AS/current/metar.txt'
-    out_path = '/tmp/tst2a.txt'
+    out_path = '/dev/null' # or /tmp/out.txt
 
 print( "Starting...")
 started = datetime.datetime.now()
