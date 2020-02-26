@@ -529,9 +529,9 @@ while True:
         #src = '/home/pi/dummy/'+dataczas+'.jpg'
         src = '/tmp/dummy_tmp.jpg'
         #dst = '/var/www/html/tmp/last_asr.jpg'
-        dst = '/tmp/last_asr.jpg'
+        dst = '/tmp/last_dummy.jpg'
         #dst_tmp = '/tmp/last_asr_tmp.jpg'
-        shutil.copy(src, dst)
+        shutil.move(src, dst)
         #symlink_force(dst_tmp, dst)
     else:
     	print("else ?")
