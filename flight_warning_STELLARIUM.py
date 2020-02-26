@@ -66,8 +66,8 @@ else:
 ###################  ZMIEN TE DANE               ########################
 #########################################################################
 
-my_lat = 52.4451 #yourlatitude # (positive = north, negative = south)
-my_lon = 16.9535 #yourlongitude # (positive = east, negative = west)
+my_lat = 51.1234 #yourlatitude # (positive = north, negative = south)
+my_lon = 14.12335 #yourlongitude # (positive = east, negative = west)
 my_elevation_const = 90 #yourantennaelevation
 IP_STELLARIUM = "192.168.3.104:8090"
 LIMIT = 200 # Powyzej tej odleglosci w km nie wyswietlaj w Stellarium
