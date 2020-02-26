@@ -70,7 +70,7 @@ my_lat = 51.1234 #yourlatitude # (positive = north, negative = south)
 my_lon = 14.12335 #yourlongitude # (positive = east, negative = west)
 my_elevation_const = 90 #yourantennaelevation
 IP_STELLARIUM = "192.168.3.104:8090"
-LIMIT = 200 # Powyzej tej odleglosci w km nie wyswietlaj w Stellarium
+LIMIT = 100 # Powyzej tej odleglosci w km nie wyswietlaj w Stellarium
 
 #########################################################################
 #########################################################################
@@ -204,7 +204,7 @@ def aktualizuj_stellarium():
 	
 	diff_t = (aktual_t - last_t).total_seconds()
 	## Update freq 1=1s, 0=realtime 
-	if (diff_t > 1):
+	if (diff_t > 3):
 		last_t = aktual_t
 
 		stel_command = 'CustomObjectMgr.removeCustomObjects();'+\
