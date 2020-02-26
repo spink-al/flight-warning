@@ -1,10 +1,9 @@
 # Original idea: 
 flight-warning by Darren Enns <darethehair@gmail.com>
 
-# flight_warning_winlin_term.py 
+# flight_warning_STELLARIUM.py 
 
-- Color console realtime display of Az/Alt of airplanes
-- Sun/Moon transits prediction
+- Sends alt/az data to Stellarium
 
 ## Needs python 2.7
 
@@ -31,6 +30,6 @@ my_elevation_const = 90 #your antenna elevation
 my_elevation = 90 #your antenna elevation 
 
 
-![alt text](https://github.com/spink-al/flight-warning/blob/master/Capture.JPG)
+
 
 
