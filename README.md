@@ -1,12 +1,14 @@
 # Original idea: 
 flight-warning by Darren Enns <darethehair@gmail.com>
 
-# flight_warning_winlin_term.py 
+# flight_warning_MLAT.py
 
 - Color console realtime display of Az/Alt of airplanes
 - Sun/Moon transits prediction
+- mlat
+- python3-ready
 
-## Needs python 2.7
+## Needs python 2.7 or 3.7
 
 ## Needs python ephem:
 
