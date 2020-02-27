@@ -67,7 +67,7 @@ if os.name == 'nt':
 else:
     print(os.name)
     metar_path = '/home/pi/work/arch/AS/current/metar.txt'
-    out_path = '/dev/null' # or /tmp/out.txt
+    out_path = '/dev/null' # or /tmp/out.txt for AllSkyRadar 
 
 print( "Starting...")
 started = datetime.datetime.now()
@@ -436,7 +436,7 @@ def tabela():
         print( '                                        |      |     |      |      |     |       |      |'
         ##     flight     elev   dist  trck   news azmth    alt  warn    Sep    p2x   h2x   time2X   age
         """
-        print( "\033c"+" Flight info -----------|-------|Pred. closest   |- Current Az/Alt ---|--- Transits:", vs.name, sun_az, sun_alt ,'  &  ', vm.name, moon_az, moon_alt)
+        print("\033c"+" Flight info -----------|-------|Pred. closest   |- Current Az/Alt ---|--- Transits:", vs.name, sun_az, sun_alt ,'  &  ', vm.name, moon_az, moon_alt)
         print( '{:9} {:>6} {:>6} {} {:>5} {} {:>6} {:>7} {} {:>5} {:>6} {:>5} {} {:>7} {:>7} {:>7} {:>8} {} {:>7} {:>7} {:>7} {:>7} {} {:>5}'.format(\
         ' icao or', ' (m)', '(d)', '|', '(km)', '|', '(km)', '(d)', '|', '(d)', '(d)', '(l)', '|', '(d)', '(km)', '(km)', '   (s)', '|', '(d)', '(km)', '(km)', '   (s)', ' |', '(s)'))
         print( '{:9} {:>6} {:>6} {} {:>5} {} {:>6} {:>7} {} {:>5} {:>6} {:>5} {} {:>7} {:>7} {:>7} {:>8} {} {:>7} {:>7} {:>7} {:>7} {} {:>5}'.format(\
