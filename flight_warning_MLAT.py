@@ -67,7 +67,7 @@ if os.name == 'nt':
 else:
     print(os.name)
     metar_path = '/home/pi/work/arch/AS/current/metar.txt'
-    out_path = '/dev/null' # or /tmp/out.txt for AllSkyRadar 
+    out_path = '/dev/null' # or /tmp/out.txt for AllSkyRadar 	
 
 print( "Starting...")
 started = datetime.datetime.now()
@@ -89,7 +89,7 @@ BLUE            = '\x1b[1;34;40m'
 YELLOW          = '\x1b[1;33;40m'
 CYAN            = '\x1b[1;36;40m'
 RESET           = '\x1b[0m' 
-
+CLEARSCREEN     = '\033c'
 #
 # initialize empty dictionaries
 #
@@ -233,7 +233,7 @@ def transit_pred(obs2moon, plane_pos, track, velocity, elevation, moon_alt, moon
         dst_h2x = 0.001
     ## tu test wysokosci na metrach nie ft    
     # if elevation < 2166:
-        # my_elevation = 0 ## taka sama wysokość punktu obserwacji n.p.m jak pas na EPPO
+        # my_elevation = 0 ## taka sama wysokosc punktu obserwacji n.p.m jak pas na EPPO
     # else:
         # my_elevation = my_elevation_const
     if not is_int_try(elevation):
@@ -436,12 +436,12 @@ def tabela():
         print( '                                        |      |     |      |      |     |       |      |'
         ##     flight     elev   dist  trck   news azmth    alt  warn    Sep    p2x   h2x   time2X   age
         """
-        print("\033c"+" Flight info -----------|-------|Pred. closest   |- Current Az/Alt ---|--- Transits:", vs.name, sun_az, sun_alt ,'  &  ', vm.name, moon_az, moon_alt)
+        print('\033c' + " Flight info -----------|-------|Pred. closest   |-- Current Az/Alt ---|--- Transits: "+ str(vs.name) + str(sun_az) + str(sun_alt) +'      &  '+ str(vm.name)+ str(moon_az)+ str(moon_alt)+ '')
         print( '{:9} {:>6} {:>6} {} {:>5} {} {:>6} {:>7} {} {:>5} {:>6} {:>5} {} {:>7} {:>7} {:>7} {:>8} {} {:>7} {:>7} {:>7} {:>7} {} {:>5}'.format(\
-        ' icao or', ' (m)', '(d)', '|', '(km)', '|', '(km)', '(d)', '|', '(d)', '(d)', '(l)', '|', '(d)', '(km)', '(km)', '   (s)', '|', '(d)', '(km)', '(km)', '   (s)', ' |', '(s)'))
+        ' icao or', ' (m)', '(d)', '|', '(km)', '|', '(km)', '(d)', '|', '(d)', '(d)', '(l)', ' |', '(d)', '(km)', '(km)', '   (s)', '|', '(d)', '(km)', '(km)', '   (s)', ' |', '(s)'))
         print( '{:9} {:>6} {:>6} {} {:>5} {} {:>6} {:>7} {} {:>5} {:>6} {:>5} {} {:>7} {:>7} {:>7} {:>8} {} {:>7} {:>7} {:>7} {:>7} {} {:>5}'.format(\
-        ' flight', 'elev', 'trck', '|', 'dist', '|', '[warn]', '[Alt]', '|', 'Alt', 'Azim', 'Azim', '|', 'Sep', 'p2x', 'h2x', 'time2X', '|', 'Sep', 'p2x', 'h2x', 'time2X', ' |', 'age'))
-        print( "------------------------|-------|----------------|--------------------|----------------------------------|----------------------------------|-------")
+        ' flight', 'elev', 'trck', '|', 'dist', '|', '[warn]', '[Alt]', '|', 'Alt', 'Azim', 'Azim', ' |', 'Sep', 'p2x', 'h2x', 'time2X', '|', 'Sep', 'p2x', 'h2x', 'time2X', ' |', 'age'))
+        print( "------------------------|-------|----------------|---------------------|----------------------------------|----------------------------------|-------")
 
         ## Subloop through all entries
         with open(out_path,'w') as tsttxt:
@@ -752,7 +752,7 @@ while True:
                     elevation = elevation + ((1013 - pressure)*30)
                     my_elevation = my_elevation_const
                 else:
-                    my_elevation = 90# -90 ## taka sama wysokość punktu obserwacji n.p.m jak pas na EPPO
+                    my_elevation = 90# -90 ## taka sama wysokosc punktu obserwacji n.p.m jak pas na EPPO
                 ## powyzsze tu nic nie robi
                 if (metric_units):
                     elevation = float((elevation * 0.3048)) # convert elevation feet to meters
@@ -800,7 +800,7 @@ while True:
                     elevation = elevation + ((1013 - pressure)*30)
                     my_elevation = my_elevation_const
                 else:
-                    my_elevation = 90 #-90 ## taka sama wysokość punktu obserwacji n.p.m jak pas na EPPO
+                    my_elevation = 90 #-90 ## taka sama wysokosc punktu obserwacji n.p.m jak pas na EPPO
                 if (metric_units):
                     elevation = float((elevation * 0.3048)) # convert elevation feet to meters
                 else:
