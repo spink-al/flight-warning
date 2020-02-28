@@ -69,6 +69,10 @@ else:
     metar_path = '/home/pi/work/arch/AS/current/metar.txt'
     out_path = '/dev/null' # or /tmp/out.txt for AllSkyRadar 	
 
+my_lat = float(flight_warning_Conf.MY_LAT)
+my_lon = float(flight_warning_Conf.MY_LON)
+my_alt = int(flight_warning_Conf.MY_ALT)
+
 print( "Starting...")
 started = datetime.datetime.now()
 
@@ -121,10 +125,10 @@ transit_separation_notignored          = 90
 #
 # set geographic location and elevation
 #
-my_lat = 50.1234 #yourlatitude # (positive = north, negative = south)
-my_lon = 15.1234 #yourlongitude # (positive = east, negative = west)
-my_elevation_const = 90 #yourantennaelevation
-my_elevation = 90 #yourantennaelevation
+# my_lat = 
+# my_lon = 
+my_elevation_const = my_alt
+my_elevation = my_alt
 near_airport_elevation = 94
 
 pressure = 1013
