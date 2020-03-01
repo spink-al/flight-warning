@@ -36,7 +36,7 @@ MY_LON="15.1234" #yourlongitude # (positive = east, negative = west)
 
 MY_ALT="90" #your antenna elevation in meters above sea level
 
-out_path="/tmp/out.txt" # output file for dummy/dummy.py or AllSkyRadar https://github.com/spink-al/AllSkyRadar
+out_path="/tmp/out.txt" # output file for dummy/_ASR_DUMMY2.py or AllSkyRadar https://github.com/spink-al/AllSkyRadar
 
 out_path="/dev/null" # for no output
 
