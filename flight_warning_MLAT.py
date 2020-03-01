@@ -58,20 +58,24 @@ import math
 import ephem
 import re
 from math import atan2, sin, cos, acos, radians, degrees, atan, asin, sqrt, isnan
+import flight_warning_Conf
+
 if os.name == 'nt':
     print(os.name)
     os.system('color')
     os.system('mode con: cols=160 lines=13')
     metar_path = 'Y:\AS\current\metar.txt'
-    out_path = 'D:\rpi\chess\tst3.txt'
+    out_path = 'D:\tst3.txt' # windows 
 else:
     print(os.name)
     metar_path = '/home/pi/work/arch/AS/current/metar.txt'
-    out_path = '/dev/null' # or /tmp/out.txt for AllSkyRadar 	
+    out_path = str(flight_warning_Conf.out_path)
+    #out_path = '/tmp/out.txt'
 
 my_lat = float(flight_warning_Conf.MY_LAT)
 my_lon = float(flight_warning_Conf.MY_LON)
 my_alt = int(flight_warning_Conf.MY_ALT)
+
 
 print( "Starting...")
 started = datetime.datetime.now()
@@ -125,10 +129,8 @@ transit_separation_notignored          = 90
 #
 # set geographic location and elevation
 #
-# my_lat = 
-# my_lon = 
-my_elevation_const = my_alt
-my_elevation = my_alt
+my_elevation_const = my_alt # why                    #yourantennaelevation
+my_elevation = my_alt       # why                     #yourantennaelevation
 near_airport_elevation = 94
 
 pressure = 1013
@@ -237,7 +239,7 @@ def transit_pred(obs2moon, plane_pos, track, velocity, elevation, moon_alt, moon
         dst_h2x = 0.001
     ## tu test wysokosci na metrach nie ft    
     # if elevation < 2166:
-        # my_elevation = 0 ## taka sama wysokosc punktu obserwacji n.p.m jak pas na EPPO
+        # my_elevation = 0 ## taka sama wysokoĹ›Ä‡ punktu obserwacji n.p.m jak pas na EPPO
     # else:
         # my_elevation = my_elevation_const
     if not is_int_try(elevation):
@@ -440,7 +442,7 @@ def tabela():
         print( '                                        |      |     |      |      |     |       |      |'
         ##     flight     elev   dist  trck   news azmth    alt  warn    Sep    p2x   h2x   time2X   age
         """
-        print('\033c' + " Flight info -----------|-------|Pred. closest   |-- Current Az/Alt ---|--- Transits: "+ str(vs.name) + str(sun_az) + str(sun_alt) +'      &  '+ str(vm.name)+ str(moon_az)+ str(moon_alt)+ '')
+        print('\033c' + " Flight info -----------|-------|Pred. closest   |-- Current Az/Alt ---|--- Transits: "+ str(vs.name) +" " +str(sun_az) +" "+ str(sun_alt) +'     &  '+ str(vm.name)+" "+ str(moon_az)+" "+ str(moon_alt)+ '')
         print( '{:9} {:>6} {:>6} {} {:>5} {} {:>6} {:>7} {} {:>5} {:>6} {:>5} {} {:>7} {:>7} {:>7} {:>8} {} {:>7} {:>7} {:>7} {:>7} {} {:>5}'.format(\
         ' icao or', ' (m)', '(d)', '|', '(km)', '|', '(km)', '(d)', '|', '(d)', '(d)', '(l)', ' |', '(d)', '(km)', '(km)', '   (s)', '|', '(d)', '(km)', '(km)', '   (s)', ' |', '(s)'))
         print( '{:9} {:>6} {:>6} {} {:>5} {} {:>6} {:>7} {} {:>5} {:>6} {:>5} {} {:>7} {:>7} {:>7} {:>8} {} {:>7} {:>7} {:>7} {:>7} {} {:>5}'.format(\
@@ -750,13 +752,13 @@ while True:
             flight = parts[10].strip()
             elevation = parts[11].strip()
             if is_int_try(elevation):
-                elevation=int(elevation)
+                elevation=int(elevation) #wtf is this??
                 if elevation > 6500:
                     pressure = int(get_metar_press())
                     elevation = elevation + ((1013 - pressure)*30)
-                    my_elevation = my_elevation_const
+                    my_elevation = my_elevation_const # why?
                 else:
-                    my_elevation = 90# -90 ## taka sama wysokosc punktu obserwacji n.p.m jak pas na EPPO
+                    my_elevation = my_elevation # why? # -90 ## taka sama wysokoĹ›Ä‡ punktu obserwacji n.p.m jak pas na EPPO
                 ## powyzsze tu nic nie robi
                 if (metric_units):
                     elevation = float((elevation * 0.3048)) # convert elevation feet to meters
@@ -804,7 +806,7 @@ while True:
                     elevation = elevation + ((1013 - pressure)*30)
                     my_elevation = my_elevation_const
                 else:
-                    my_elevation = 90 #-90 ## taka sama wysokosc punktu obserwacji n.p.m jak pas na EPPO
+                    my_elevation = my_elevation # why? 90 #-90 ## taka sama wysokoĹ›Ä‡ punktu obserwacji n.p.m jak pas na EPPO
                 if (metric_units):
                     elevation = float((elevation * 0.3048)) # convert elevation feet to meters
                 else:
