@@ -14,15 +14,15 @@ flight-warning by Darren Enns <darethehair@gmail.com>
 
 pip install ephem
 
-## Windows:
+## Windows (not tested see other branch):
 
-(path to ncat)\ncat.exe (ip of dump1090 host) 30003 | (path to python 2.7)\python.exe flight_warning_winlin_term.py
+(path to ncat)\ncat.exe (ip of dump1090 host) 30003 | (path to python 2.7)\python.exe flight_warning_MLAT.py
 
 ## Linux:
 
-nc (ip of dump1090 host) 30003 | python flight_warning_winlin_term.py
+nc (ip of dump1090 host) 30003 | python flight_warning_MLAT.py
 
-## Edit with your lat/lon/elevation:
+## Edit with your lat/lon/elevation in flight_warning_conf.py:
 
 my_lat = 50.1234 #yourlatitude # (positive = north, negative = south) 
 
