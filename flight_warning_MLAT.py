@@ -143,6 +143,7 @@ entering_sound                   = int(flight_warning_Conf.entering_sound)
 detected_sound                   = int(flight_warning_Conf.detected_sound)
 min_t_sound                    = float(flight_warning_Conf.min_t_sound)
 
+pressure                         = int(flight_warning_Conf.pressure)
 
 #
 # set geographic location and elevation
@@ -150,8 +151,6 @@ min_t_sound                    = float(flight_warning_Conf.min_t_sound)
 my_elevation_const = my_alt # why                    #yourantennaelevation
 my_elevation = my_alt       # why                     #yourantennaelevation
 near_airport_elevation = 94
-
-pressure = 1013
 
 
 gatech = ephem.Observer()
