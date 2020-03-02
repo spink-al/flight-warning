@@ -21,3 +21,21 @@ Colors used in table for various ranges.
  4000 <= elevation <= 8000 PURPLE      (default/black bg)
  2000 <= elevation  < 4000 GREEN       (black on green bg) (same as greenalert?)
  0    <  elevation  < 2000 YELLOW      (default/black bg)
+
+Definitions:
+#TERMINAL COLORS
+REDALERT        = '\x1b[1;37;41m'
+PURPLE          = '\x1b[1;35;40m'
+PURPLEDARK      = '\x1b[0;35;40m'
+RED             = '\x1b[0;31;40m'.
+GREEN           = '\x1b[0;30;42m'.
+GREENALERT      = '\x1b[0;30;42m'.
+# GREENFG       = '\x1b[0;42;40m'.
+GREENFG         = '\x1b[1;32;40m'.
+BLUE            = '\x1b[1;34;40m'
+YELLOW          = '\x1b[1;33;40m'
+CYAN            = '\x1b[1;36;40m'
+RESET           = '\x1b[0m'.
+CLEARSCREEN     = '\033c'
+# Used directly for sound:
+GONG            = '\a'
