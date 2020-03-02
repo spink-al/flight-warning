@@ -69,7 +69,9 @@ if os.name == 'nt':
 else:
     print(os.name)
     #metar_path = '/home/pi/work/arch/AS/current/metar.txt'
+    metar_active = int(flight_warning_Conf.metar_active)
     metar_path = str(flight_warning_Conf.metar_path)
+
     out_path = str(flight_warning_Conf.out_path)
     #out_path = '/tmp/out.txt'
 
@@ -284,7 +286,7 @@ def transit_pred(obs2moon, plane_pos, track, velocity, elevation, moon_alt, moon
 
     return  lat3, lon3, azimuth1, altitude1, dst_h2x, dst_p2x, delta_time, 0, moon_az, moon_alt
     ##        0        1        2        3            4        5        6           7    8        9
-    
+
 def dist_col(distance):
     if (distance <= 300 and distance > 100):
         return PURPLE
@@ -363,52 +365,48 @@ def is_int_try(str):
     except ValueError:
         return False
 def get_metar_press():
-    '''
     global metar_t
     global pressure
-    global metar_path 
-    aktual_metar_t = datetime.datetime.now()
-    diff_metar_t = (aktual_metar_t - metar_t).total_seconds() 
-    if (diff_metar_t > 900):
-        metar_t = aktual_metar_t    
-        # metar_path = 'Y:\AS\current\metar.txt'
-        metar_file=open(metar_path, 'r')
-        metar_data=metar_file.readlines()
-        metar_file.close()
-        metar_line=[]
-        pressure = ''
-        
-        PRESS_RE = re.compile(r"Q[0-1][0-9][0-9][0-9]")                       
-        # metar_data=['METAR EPPO 021730Z 25007KT 6000 OVC023 04/03 Q0998 =' ]
-        
-        for i, line in enumerate(metar_data):
-            if "EPPO" in line: 
-                metar_line.append(line.strip('\r\n').rstrip().strip())
+    global metar_path
+    global metar_active
+
+    if metar_active == 1:
+        aktual_metar_t = datetime.datetime.now()
+        diff_metar_t = (aktual_metar_t - metar_t).total_seconds() 
+        if (diff_metar_t > 900):
+            metar_t = aktual_metar_t
+            metar_file=open(metar_path, 'r')
+            metar_data=metar_file.readlines()
+            metar_file.close()
+            metar_line=[]
+            pressure = ''
+            PRESS_RE = re.compile(r"Q[0-1][0-9][0-9][0-9]")
+            # metar_data=['METAR EPPO 021730Z 25007KT 6000 OVC023 04/03 Q0998 =' ]
+            for i, line in enumerate(metar_data):
+                if "EPPO" in line: 
+                    metar_line.append(line.strip('\r\n').rstrip().strip())
+                else:
+                    return 1012
+
+            for f, fields in enumerate(metar_line): 
+                metar_fields = fields.split(" ")
+
+            # print( metart_fields        
+
+            for ff, field in enumerate(metar_fields): 
+                if PRESS_RE.search(field): 
+                    pressure = int(field[1:5])
+            if ( 800 < pressure < 1100):
+                return pressure
             else:
-                return 1012
-        
-        for f, fields in enumerate(metar_line): 
-            metar_fields = fields.split(" ")
-
-        # print( metart_fields        
-
-        for ff, field in enumerate(metar_fields): 
-            if PRESS_RE.search(field): 
-                pressure = int(field[1:5])
-        #
-        
-        if ( 800 < pressure < 1100):
-            return pressure
+                return 1013
         else:
-            return 1013
+            return pressure
     else:
-    
+        # alt pressure correction from metar inactive until tested
+        # returns 1013 from global var
         return pressure
-    '''
-    # alt pressure correction from metar inactive until tested
-    # returns 1013 from global var
-    return pressure
-    
+
 def clean_dict():
     for pentry in plane_dict:
         then2 = plane_dict[pentry][0]
