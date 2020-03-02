@@ -6,8 +6,10 @@ MY_ALT="90"
 
 # data output to file, for no output change "/tmp/out.txt" to "/dev/null"
 out_path="/tmp/out.txt"
-metar_path="/tmp/metar.txt" # todo
 
+# need more tests:
+metar_active = "0" # 0/1
+metar_path="/tmp/metar.txt"
 
 warning_distance                    = "249"
 # "check age of newest icao record, compare to newly-input value, and kill dictionary if too old (i.e. start fresh history)"
@@ -43,4 +45,6 @@ min_t_sound = "2.0" # float for test
 # write data for 3d heatmaps to file (lat,lon,alt,):
 heatmap_latlon_log                    = "0"
 heatmap_latlon_log_path               = "/tmp/_heatmap_asi.dat"
+
+
 
