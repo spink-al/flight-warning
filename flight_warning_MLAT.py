@@ -68,13 +68,16 @@ if os.name == 'nt':
     out_path = 'D:\tst3.txt' # windows 
 else:
     print(os.name)
-    metar_path = '/home/pi/work/arch/AS/current/metar.txt'
+    #metar_path = '/home/pi/work/arch/AS/current/metar.txt'
+    metar_path = str(flight_warning_Conf.metar_path)
     out_path = str(flight_warning_Conf.out_path)
     #out_path = '/tmp/out.txt'
 
 my_lat = float(flight_warning_Conf.MY_LAT)
 my_lon = float(flight_warning_Conf.MY_LON)
 my_alt = int(flight_warning_Conf.MY_ALT)
+
+
 
 
 print( "Starting...")
@@ -110,21 +113,34 @@ plane_dict = {}
 metric_units = True # inactive
 
 aktual_t = datetime.datetime.now()
-last_t = datetime.datetime.now() - datetime.timedelta(seconds=10) 
-metar_t = datetime.datetime.now() - datetime.timedelta(minutes=20) 
+last_t = datetime.datetime.now() - datetime.timedelta(seconds=10)
+metar_t = datetime.datetime.now() - datetime.timedelta(minutes=20)
 gong_t = datetime.datetime.now()
 #
 # set desired distance and time limits
 #
-warning_distance                    = 249 
-alert_duplicate_minutes             = 20
-alert_distance                      = 15
-xtd_tst                             = 20
+warning_distance                 = int(flight_warning_Conf.warning_distance)
+alert_duplicate_minutes          = int(flight_warning_Conf.alert_duplicate_minutes)
+alert_distance                   = int(flight_warning_Conf.alert_distance)
+xtd_tst                          = int(flight_warning_Conf.xtd_tst)
 
-transit_separation_sound_alert         = 2.2
-transit_separation_REDALERT_FG         = 5
-transit_separation_GREENALERT_FG       = 3
-transit_separation_notignored          = 90
+transit_separation_sound_alert = float(flight_warning_Conf.transit_separation_sound_alert)
+transit_separation_REDALERT_FG   = int(flight_warning_Conf.transit_separation_REDALERT_FG)
+transit_separation_GREENALERT_FG = int(flight_warning_Conf.transit_separation_GREENALERT_FG)
+transit_separation_notignored    = int(flight_warning_Conf.transit_separation_notignored)
+
+transit_history_log              = int(flight_warning_Conf.transit_history_log)
+transit_history_log_path         = str(flight_warning_Conf.transit_history_log_path)
+
+heatmap_latlon_log               = int(flight_warning_Conf.heatmap_latlon_log)
+heatmap_latlon_log_path          = str(flight_warning_Conf.heatmap_latlon_log_path)
+
+sun_tr_sound                     = int(flight_warning_Conf.sun_tr_sound)
+moon_tr_sound                    = int(flight_warning_Conf.moon_tr_sound)
+entering_sound                   = int(flight_warning_Conf.entering_sound)
+detected_sound                   = int(flight_warning_Conf.detected_sound)
+min_t_sound                    = float(flight_warning_Conf.min_t_sound)
+
 
 #
 # set geographic location and elevation
@@ -329,7 +345,7 @@ def gong():
     global gong_t
     aktual_gong_t = datetime.datetime.now()
     diff_gong_t = (aktual_gong_t - gong_t).total_seconds() 
-    if (diff_gong_t > 2):
+    if (diff_gong_t > min_t_sound):
         gong_t = aktual_gong_t
         print( '\a') ## TERMINAL GONG!
 
@@ -519,42 +535,41 @@ def tabela():
 
                         wiersz += ' |'
 
-            
+
                         thenx = plane_dict[pentry][0]
                         nowx = datetime.datetime.now()
                         diff_secx = (nowx - thenx).total_seconds()
-                        
-                        
+
                         if is_float_try(plane_dict[pentry][19]) and is_float_try(plane_dict[pentry][18]):
                             separation_deg2 = round(float(plane_dict[pentry][19]-plane_dict[pentry][18]),1)
                         else:
                             separation_deg2 = 90.0
-                        
+
                         if (-transit_separation_GREENALERT_FG < separation_deg2 < transit_separation_GREENALERT_FG):
                             wiersz += '{} {:>6} {}'.format(GREENALERT, str(round((plane_dict[pentry][19]-plane_dict[pentry][18]),1)),RESET) ## SEPARACJA
                             wiersz += '{:>8}'.format(str(plane_dict[pentry][21]))  ## DISTANCE: AIRPLANE POS TO AIRPLANE PATH CROSS  
                             wiersz += '{:>7}'.format(str(round(plane_dict[pentry][20],1))) ## DISTANCE MY_POS TO CROSS POINT
                             wiersz += '{:>10}'.format(str(plane_dict[pentry][22]))            ## delta_tim    ## TIME UNTIL PLANE ARRIVE AT CROS
-                            
+
                         elif (-transit_separation_REDALERT_FG < separation_deg2 < transit_separation_REDALERT_FG):
                             wiersz += '{} {:>6} {}'.format(REDALERT, str(round((plane_dict[pentry][19]-plane_dict[pentry][18]),1)),RESET) ## SEPARACJA
                             wiersz += '{:>8}'.format(str(plane_dict[pentry][21]))  ## DISTANCE: AIRPLANE POS TO AIRPLANE PATH CROSS  
                             wiersz += '{:>7}'.format(str(round(plane_dict[pentry][20],1))) ## DISTANCE MY_POS TO CROSS POINT
                             wiersz += '{:>10}'.format(str(plane_dict[pentry][22]))            ## delta_tim    ## TIME UNTIL PLANE ARRIVE AT CROSS POINT
-                        
+
                         elif (-transit_separation_notignored < separation_deg2 < transit_separation_notignored):
                             wiersz += '{} {:>6} {}'.format(RED, str(round((plane_dict[pentry][19]-plane_dict[pentry][18]),1)),RESET) ## SEPARACJA
                             wiersz += '{:>8}'.format(str(plane_dict[pentry][21]))  ## DISTANCE: AIRPLANE POS TO AIRPLANE PATH CROSS  
                             wiersz += '{:>7}'.format(str(round(plane_dict[pentry][20],1))) ## DISTANCE MY_POS TO CROSS POINT
                             wiersz += '{:>10}'.format(str(plane_dict[pentry][22]))            ## delta_tim    ## TIME UNTIL PLANE ARRIVE AT CROSS POINT    
-                        
+
                         else:
                             wiersz += '{:>8}'.format(str("---"))  ## SEPARACJA
                             wiersz += '{:>8}'.format(str("---"))  ## DISTANCE: AIRPLANE POS TO AIRPLANE PATH CROSS   
                             wiersz += '{:>7}'.format(str("---")) ## DISTANCE MY_POS TO CROSS POINT
                             wiersz += '{:>10}'.format(str("---"))            ## delta_tim    ## TIME UNTIL PLANE ARRIVE AT CROSS POINT                        
                         ###tu koniec
-            
+
                         wiersz += ' |'
                         if is_float_try(plane_dict[pentry][24]) and is_float_try(plane_dict[pentry][23]):
                             separation_deg = round(float(plane_dict[pentry][24]-plane_dict[pentry][23]),1)
@@ -565,20 +580,19 @@ def tabela():
                             wiersz += '{:>8}'.format(str(plane_dict[pentry][27]))  ## DISTANCE: AIRPLANE POS TO AIRPLANE PATH CROSS  
                             wiersz += '{:>7}'.format(str(round(plane_dict[pentry][25],1))) ## DISTANCE MY_POS TO CROSS POINT
                             wiersz += '{:>10}'.format(str(plane_dict[pentry][26]))            ## delta_tim    ## TIME UNTIL PLANE ARRIVE AT CROS
-                            
-                            
+
                         elif (-transit_separation_REDALERT_FG < separation_deg < transit_separation_REDALERT_FG):
                             wiersz += '{} {:>6} {}'.format(REDALERT, str(round((plane_dict[pentry][24]-plane_dict[pentry][23]),1)),RESET) ## SEPARACJA
                             wiersz += '{:>8}'.format(str(plane_dict[pentry][27]))  ## DISTANCE: AIRPLANE POS TO AIRPLANE PATH CROSS  
                             wiersz += '{:>7}'.format(str(round(plane_dict[pentry][25],1))) ## DISTANCE MY_POS TO CROSS POINT
                             wiersz += '{:>10}'.format(str(plane_dict[pentry][26]))            ## delta_tim    ## TIME UNTIL PLANE ARRIVE AT CROSS POINT
-                        
+
                         elif (-transit_separation_notignored < separation_deg < transit_separation_notignored):
                             wiersz += '{} {:>6} {}'.format(RED, str(round((plane_dict[pentry][24]-plane_dict[pentry][23]),1)),RESET) ## SEPARACJA
                             wiersz += '{:>8}'.format(str(plane_dict[pentry][27]))  ## DISTANCE: AIRPLANE POS TO AIRPLANE PATH CROSS  
                             wiersz += '{:>7}'.format(str(round(plane_dict[pentry][25],1))) ## DISTANCE MY_POS TO CROSS POINT
                             wiersz += '{:>10}'.format(str(plane_dict[pentry][26]))            ## delta_tim    ## TIME UNTIL PLANE ARRIVE AT CROSS POINT    
-                        
+
                         else:
                             wiersz += '{:>8}'.format(str("---"))  ## SEPARACJA
                             wiersz += '{:>8}'.format(str("---"))  ## DISTANCE: AIRPLANE POS TO AIRPLANE PATH CROSS   
@@ -589,13 +603,13 @@ def tabela():
                         wiersz += '{:>6}'.format(str(round(diff_secx, 1)))
 
                         print( wiersz)
-                        
+
                         # next 4 lines data for txt transit history
-                        #if (-transit_separation_REDALERT_FG < separation_deg2 < transit_separation_REDALERT_FG) or (-transit_separation_REDALERT_FG < separation_deg < transit_separation_REDALERT_FG):
-                        #    with open('/tmp/tr.txt','a') as tra_txt:
-                        #        trans_wiersz = str(plane_dict[pentry][0])+wiersz+'\n'
-                        #        tra_txt.write(str(trans_wiersz))
-                        
+                        if transit_history_log == 1:
+                            if (-transit_separation_REDALERT_FG < separation_deg2 < transit_separation_REDALERT_FG) or (-transit_separation_REDALERT_FG < separation_deg < transit_separation_REDALERT_FG):
+                                with open(transit_history_log_path,'a') as tra_txt:
+                                    trans_wiersz = str(plane_dict[pentry][0])+wiersz+'\n'
+                                    tra_txt.write(str(trans_wiersz))
 
                         zapis=str(pentry)+','+str(plane_dict[pentry][1])+','+str(plane_dict[pentry][2])+','+\
                         str(plane_dict[pentry][3])+','+str(plane_dict[pentry][4])+','+str(plane_dict[pentry][5])+','+\
@@ -885,42 +899,45 @@ while True:
 
                             plane_dict[icao][15].append(poz_az)
                             plane_dict[icao][16].append(poz_alt)
-                        
-                        # Next 3 lines - data for heatmaps
-                        #log_line = str(plane_lat)+","+str(plane_lon)+","+str(elevation)
-                        #with open("/tmp/_heatmap_asi.dat", 'a') as tsttxt:
-                        #        tsttxt.write(log_line+",\n")            
-                #        
-                # if matched record between type 1/3  occurs, log stats to stdout and also email if entering/leaving detection zone
-                #
-                # if ((type == "1" or type == "3" or type == "4") and (icao in plane_dict and plane_dict[icao][1] != "" and plane_dict[icao][2] != "" and plane_dict[icao][11] != "")):
+
+                        # Next lines - data for heatmaps
+                        if heatmap_latlon_log == 1:
+                            log_line = str(plane_lat)+","+str(plane_lon)+","+str(elevation)
+                            with open("/tmp/_heatmap_asi.dat", 'a') as tsttxt:
+                                tsttxt.write(log_line+",\n")
+
+        # if matched record between type 1/3  occurs, log stats to stdout and also email if entering/leaving detection zone
+        #
+        # if ((type == "1" or type == "3" or type == "4") and (icao in plane_dict and plane_dict[icao][1] != "" and plane_dict[icao][2] != "" and plane_dict[icao][11] != "")):
         if ((type == "1" or type == "3" or type == "4") and (icao in plane_dict and plane_dict[icao][2] != "" and plane_dict[icao][11] != "")):
 
             flight             = plane_dict[icao][1]
-            plane_lat         = plane_dict[icao][2]
-            plane_lon         = plane_dict[icao][3]
-            elevation         = plane_dict[icao][4]
-            distance         = plane_dict[icao][5]
-            azimuth         = plane_dict[icao][6]
-            altitude         = plane_dict[icao][7]
-            track             = plane_dict[icao][11]
-            warning         = plane_dict[icao][12]
-            direction         = plane_dict[icao][9]
+            plane_lat          = plane_dict[icao][2]
+            plane_lon          = plane_dict[icao][3]
+            elevation          = plane_dict[icao][4]
+            distance           = plane_dict[icao][5]
+            azimuth            = plane_dict[icao][6]
+            altitude           = plane_dict[icao][7]
+            track              = plane_dict[icao][11]
+            warning            = plane_dict[icao][12]
+            direction          = plane_dict[icao][9]
             # elevation_feet     = int(round(int(round(elevation / 0.3048)/100)))
-            velocity         = plane_dict[icao][14]
-            xtd             = crosstrack(distance, (180 + azimuth) % 360, track)
+            velocity           = plane_dict[icao][14]
+            xtd               = crosstrack(distance, (180 + azimuth) % 360, track)
             
             plane_dict[icao][13] = xtd
             
             if (xtd <= xtd_tst and distance < warning_distance and warning == "" and direction != "RECEDING"):
                 plane_dict[icao][12] = "WARNING"
                 plane_dict[icao][13] = xtd
-                gong()
+                if detected_sound == 1: # not sure, looks like in detection zone without earlier warning
+                    gong()
 
             if (xtd > xtd_tst and distance < warning_distance and warning == "WARNING" and direction != "RECEDING"):
                 plane_dict[icao][12] = ""
                 plane_dict[icao][13] = xtd
-                gong()
+                if detected_sound == 1: # pretty sure
+                    gong()
 
             if (plane_dict[icao][8] == ""):
                 plane_dict[icao][8] = "LINKED!"
@@ -933,7 +950,8 @@ while True:
             
             if (plane_dict[icao][5] <= alert_distance and plane_dict[icao][8] != "ENTERING"):
                 plane_dict[icao][8] = "ENTERING"
-                gong()
+                if entering_sound == 1:
+                    gong()
 
             #
             # if plane leaves detection zone, generate email and include history capture
@@ -973,9 +991,9 @@ while True:
                 else:
                     separation_deg = 90.0
                 if (-transit_separation_sound_alert < separation_deg < transit_separation_sound_alert):
-                    # sun
-                    #gong() # SUN!!!
-                    pass
+                    if sun_tr_sound == 1:
+                        gong() # SUN!!!
+                        #pass
                 
             if tst_int2 == 0:
                 #if (plane_dict[icao][23] == ''):
@@ -1005,8 +1023,8 @@ while True:
                 else:
                     separation_deg2 = 90.0
                 if (-transit_separation_sound_alert < separation_deg2 < transit_separation_sound_alert):
-                    # moon
-                    gong()
+                    if moon_tr_sound == 1:
+                        gong()
                         #pass
 
     moon_alt, moon_az, sun_alt, sun_az = tabela()
