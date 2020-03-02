@@ -10,6 +10,8 @@ out_path="/tmp/out.txt"
 # need more tests:
 metar_active = "0" # 0/1
 metar_path="/tmp/metar.txt"
+# if metar not available (0) use this pressure:
+pressure = "1013"
 
 warning_distance                    = "249"
 # "check age of newest icao record, compare to newly-input value, and kill dictionary if too old (i.e. start fresh history)"
