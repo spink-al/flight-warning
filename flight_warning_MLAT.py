@@ -143,7 +143,6 @@ entering_sound                   = int(flight_warning_Conf.entering_sound)
 detected_sound                   = int(flight_warning_Conf.detected_sound)
 min_t_sound                    = float(flight_warning_Conf.min_t_sound)
 
-pressure                         = int(flight_warning_Conf.pressure)
 
 #
 # set geographic location and elevation
@@ -151,6 +150,8 @@ pressure                         = int(flight_warning_Conf.pressure)
 my_elevation_const = my_alt # why                    #yourantennaelevation
 my_elevation = my_alt       # why                     #yourantennaelevation
 near_airport_elevation = 94
+
+pressure = 1013
 
 
 gatech = ephem.Observer()
@@ -400,6 +401,7 @@ def get_metar_press():
             else:
                 return 1013
         else:
+            #print(pressure)
             return pressure
     else:
         # alt pressure correction from metar inactive until tested
@@ -764,13 +766,20 @@ while True:
             elevation = parts[11].strip()
             if is_int_try(elevation):
                 elevation=int(elevation) #wtf is this??
-                if elevation > 6500:
+                if elevation > 6500: # m or ft at this stage? 
                     pressure = int(get_metar_press())
-                    elevation = elevation + ((1013 - pressure)*30)
-                    my_elevation = my_elevation_const # why?
+                    elevation = elevation + ((1013 - pressure)*30) # test case > 6500m 
+                    my_elevation = my_elevation_const #  wtf why?
                 else:
                     my_elevation = my_elevation # why? # -90 ## taka sama wysokoĹ›Ä‡ punktu obserwacji n.p.m jak pas na EPPO
-                ## powyzsze tu nic nie robi
+                    #elevation = elevation - my_elevation
+                    #elevation - ((1013 - pressure)*30)) - my_elevation)
+                    #elevation = elevation #- ((1013 - pressure)*30) - my_elevation)
+                    
+                    # pfff, not sure, testing atm
+                    elevation = elevation - (((1013 - pressure)*30) - my_elevation) # adsb elev - ( pressure_corr - my_elev ) #30ft or m??
+
+                ## 
                 if (metric_units):
                     elevation = float((elevation * 0.3048)) # convert elevation feet to meters
                 else:
@@ -812,14 +821,23 @@ while True:
             elevation = parts[11].strip() # assumes dump1090 is outputting elevation in feet 
             if is_int_try(elevation):
                 elevation=int(elevation)
-                if elevation > 6500:
+                if elevation > 6500: # m or ft at this stage? 
                     pressure = int(get_metar_press())
                     elevation = elevation + ((1013 - pressure)*30)
                     my_elevation = my_elevation_const
                 else:
                     my_elevation = my_elevation # why? 90 #-90 ## taka sama wysokoĹ›Ä‡ punktu obserwacji n.p.m jak pas na EPPO
+                    #elevation = my_elevation + (elevation + ((1013 - pressure)*30))
+                    #elevation = elevation - my_elevation
+                    
+                    # pfff, not sure, testing atm
+                    elevation = elevation - (((1013 - pressure)*30) - my_elevation) # adsb elev - ( pressure_corr - my_elev ) #30ft or m??
+
+
+
                 if (metric_units):
                     elevation = float((elevation * 0.3048)) # convert elevation feet to meters
+
                 else:
                     elevation = ""
             elevation_units = "ft"
