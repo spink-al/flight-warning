@@ -5,7 +5,7 @@ flight-warning by Darren Enns <darethehair@gmail.com>
 
 - Color console realtime display of Az/Alt of airplanes
 - Sun/Moon transits prediction
-- mlat
+- mlat if connected to VRS rebroadcast server
 - python3-ready
 
 ## Needs python 2.7 or 3.7
