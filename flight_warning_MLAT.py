@@ -151,7 +151,8 @@ my_elevation_const = my_alt # why                    #yourantennaelevation
 my_elevation = my_alt       # why                     #yourantennaelevation
 near_airport_elevation = 94
 
-pressure = 1013
+#pressure = 1013
+pressure = int(flight_warning_Conf.pressure)
 
 
 gatech = ephem.Observer()
