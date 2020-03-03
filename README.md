@@ -18,7 +18,7 @@ pip install ephem
 
 edit flight_warning_MLAT.BAT
 
-(path to ncat)\ncat.exe (ip of dump1090 [or rebroadcast serv VRS] host) (port) | (path to python 2.7 or 3.7)\python.exe flight_warning_MLAT.py
+(path to)\ncat.exe (ip of dump1090 [or rebroadcast VRS] host) (port) | (path to python 2.7 or 3.7)\python.exe flight_warning_MLAT.py
 
 Run by:
 
