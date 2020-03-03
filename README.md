@@ -15,7 +15,7 @@ flight-warning by Darren Enns <darethehair@gmail.com>
 pip install ephem
 
 ## Windows (not tested see win_lin_2019 branch):
-
+WINDOWS_RUNME.BAT
 (path to ncat)\ncat.exe (ip of dump1090 host) 30003 | (path to python 2.7)\python.exe flight_warning_MLAT.py
 
 ## Linux:
