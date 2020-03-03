@@ -8,11 +8,13 @@ MY_LON="15.1234"
 MY_ALT="90"
 
 # data output to file, for no output change "/tmp/out.txt" to "/dev/null"
+# out_path="C:\\some_folder\\out.txt" # windows \\ in path should work
 out_path="/tmp/out.txt"
 near_airport_code="EPPO" # EPPO EDDB etc not POZ SXF
 
 # need more tests:
 metar_active="0" # 0/1
+#metar_path="C:\\some_folder\\metar.txt"  # windows \\ in path should work
 metar_path="/tmp/metar.txt"
 # if metar not available (0) use this pressure:
 pressure="1013"
