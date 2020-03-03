@@ -64,11 +64,12 @@ if os.name == 'nt':
     print(os.name)
     os.system('color')
     os.system('mode con: cols=160 lines=13')
-    metar_path = 'Y:\AS\current\metar.txt'
-    out_path = 'D:\tst3.txt' # windows 
+    metar_active = int(flight_warning_Conf.metar_active)
+    metar_path = str(flight_warning_Conf.metar_path) # windows \\ in path should work
+
+    out_path = str(flight_warning_Conf.out_path) # windows \\ in path should work
 else:
     print(os.name)
-    #metar_path = '/home/pi/work/arch/AS/current/metar.txt'
     metar_active = int(flight_warning_Conf.metar_active)
     metar_path = str(flight_warning_Conf.metar_path)
 
