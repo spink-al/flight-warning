@@ -35,7 +35,7 @@ for dump1090 on 30003 port:
 
 nc (ip of dump1090 host) 30003 | python flight_warning_MLAT.py
 
-## Edit with your lat/lon/elevation in flight_warning_conf.py:
+## Edit with your lat/lon/elevation in flight_warning_Conf.py:
 
 MY_LAT="51.1234" #yourlatitude # (positive = north, negative = south) 
 
