@@ -122,6 +122,7 @@ gong_t = datetime.datetime.now()
 #
 # set desired distance and time limits
 #
+
 warning_distance                 = int(flight_warning_Conf.warning_distance)
 alert_duplicate_minutes          = int(flight_warning_Conf.alert_duplicate_minutes)
 alert_distance                   = int(flight_warning_Conf.alert_distance)
@@ -144,7 +145,7 @@ entering_sound                   = int(flight_warning_Conf.entering_sound)
 detected_sound                   = int(flight_warning_Conf.detected_sound)
 min_t_sound                    = float(flight_warning_Conf.min_t_sound)
 
-
+display_limit = int(flight_warning_Conf.display_limit)
 #
 # set geographic location and elevation
 #
@@ -259,7 +260,7 @@ def transit_pred(obs2moon, plane_pos, track, velocity, elevation, moon_alt, moon
         dst_h2x = 0.001
     ## tu test wysokosci na metrach nie ft    
     # if elevation < 2166:
-        # my_elevation = 0 ## taka sama wysokoĹ›Ä‡ punktu obserwacji n.p.m jak pas na EPPO
+        # my_elevation = 0 ## taka sama wysokoÄąâ€şĂ„â€ˇ punktu obserwacji n.p.m jak pas na EPPO
     # else:
         # my_elevation = my_elevation_const
     if not is_int_try(elevation):
@@ -471,7 +472,7 @@ def tabela():
             tsttxt.write('')
         for pentry in plane_dict:
             with open(out_path,'a') as tsttxt:
-                if not (plane_dict[pentry][5] == '') and (plane_dict[pentry][5] <= 250):
+                if not (plane_dict[pentry][5] == '') and (plane_dict[pentry][5] <= display_limit):
                         if plane_dict[pentry][17] != "":
                             then = plane_dict[pentry][17]
                             now = datetime.datetime.now()
@@ -773,7 +774,7 @@ while True:
                     elevation = elevation + ((1013 - pressure)*30) # test case > 6500m 
                     my_elevation = my_elevation_const #  wtf why?
                 else:
-                    my_elevation = my_elevation # why? # -90 ## taka sama wysokoĹ›Ä‡ punktu obserwacji n.p.m jak pas na EPPO
+                    my_elevation = my_elevation # why? # -90 ## taka sama wysokoÄąâ€şĂ„â€ˇ punktu obserwacji n.p.m jak pas na EPPO
                     #elevation = elevation - my_elevation
                     #elevation - ((1013 - pressure)*30)) - my_elevation)
                     #elevation = elevation #- ((1013 - pressure)*30) - my_elevation)
@@ -828,7 +829,7 @@ while True:
                     elevation = elevation + ((1013 - pressure)*30)
                     my_elevation = my_elevation_const
                 else:
-                    my_elevation = my_elevation # why? 90 #-90 ## taka sama wysokoĹ›Ä‡ punktu obserwacji n.p.m jak pas na EPPO
+                    my_elevation = my_elevation # why? 90 #-90 ## taka sama wysokoÄąâ€şĂ„â€ˇ punktu obserwacji n.p.m jak pas na EPPO
                     #elevation = my_elevation + (elevation + ((1013 - pressure)*30))
                     #elevation = elevation - my_elevation
                     
