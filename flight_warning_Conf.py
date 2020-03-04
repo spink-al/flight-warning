@@ -19,7 +19,8 @@ metar_path="/tmp/metar.txt"
 # if metar not available (0) use this pressure:
 pressure="1013"
 
-warning_distance="249"
+display_limit="250" # ignore planes further than, in km
+warning_distance="249" # do not generate warnings for planes further than, in km
 # "check age of newest icao record, compare to newly-input value, and kill dictionary if too old (i.e. start fresh history)"
 alert_duplicate_minutes="20" # minutes
 # radius of "detection zone"; status "ENTERING" or "LEAVING"
