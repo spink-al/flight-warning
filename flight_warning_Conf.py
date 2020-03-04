@@ -21,19 +21,14 @@ pressure="1013"
 
 display_limit="250" # ignore planes further than, in km
 warning_distance="249" # do not generate warnings for planes further than, in km
-# "check age of newest icao record, compare to newly-input value, and kill dictionary if too old (i.e. start fresh history)"
-alert_duplicate_minutes="20" # minutes
-# radius of "detection zone"; status "ENTERING" or "LEAVING"
-alert_distance="15" # km
-# comparison value for "xtd"/"cross-track error routine" calculated minimal distance at which plane will be near observator(?)
-xtd_tst="20" # km
+alert_duplicate_minutes="20" # minutes # "check age of newest icao record, compare to newly-input value, and kill dictionary if too old (i.e. start fresh history)"
+alert_distance="15" # km # radius of "detection zone"; status "ENTERING" or "LEAVING"
+xtd_tst="20" # km # comparison value for "xtd"/"cross-track error routine" calculated minimal distance at which plane will be near observator(?)
 
-# maximum transit angle separation for sound alert
-transit_separation_sound_alert="2.2" #deg
-# maximum transit angle separation for colouring in table 
-transit_separation_REDALERT_FG="5"
-transit_separation_GREENALERT_FG="3"
-transit_separation_notignored="90"
+transit_separation_sound_alert="2.2" #deg # maximum transit angle separation for sound alert
+transit_separation_REDALERT_FG="5" # maximum transit angle separation for red colouring in table 
+transit_separation_GREENALERT_FG="3" # maximum transit angle separation for green colouring in table 
+transit_separation_notignored="90" # don't touch
 
 # write transit history to file, (with colours, tail -f /tmp/tr.txt or less -r /tmp/tr.txt):
 transit_history_log="0" # 1/0
