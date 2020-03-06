@@ -10,7 +10,6 @@ MY_ALT="90"
 # data output to file, for no output change "/tmp/out.txt" to "/dev/null"
 # out_path="C:\\some_folder\\out.txt" # windows \\ in path should work
 out_path="/tmp/out.txt"
-near_airport_code="EPPO" # EPPO EDDB etc not POZ SXF
 
 # need more tests:
 metar_active="0" # 0/1
@@ -18,6 +17,9 @@ metar_active="0" # 0/1
 metar_path="/tmp/metar.txt"
 # if metar not available (0) use this pressure:
 pressure="1013"
+ignore_pressure="1" # ignore metar&pressure completely/use 1013hPa
+near_airport_code="EPPO" # EPPO EDDB etc not POZ SXF
+near_airport_elevation="94"
 
 display_limit="250" # ignore planes further than, in km
 warning_distance="249" # do not generate warnings for planes further than, in km
@@ -29,6 +31,8 @@ transit_separation_sound_alert="2.2" #deg # maximum transit angle separation for
 transit_separation_REDALERT_FG="5" # maximum transit angle separation for red colouring in table 
 transit_separation_GREENALERT_FG="3" # maximum transit angle separation for green colouring in table 
 transit_separation_notignored="90" # don't touch
+
+minimum_alt_transits="5" # don't bother if sun/moon below this (deg)
 
 # write transit history to file, (with colours, tail -f /tmp/tr.txt or less -r /tmp/tr.txt):
 transit_history_log="0" # 1/0
@@ -49,7 +53,6 @@ min_t_sound="2.0" # float for test
 # write data for 3d heatmaps to file (lat,lon,alt,):
 heatmap_latlon_log="0"
 heatmap_latlon_log_path="/tmp/_heatmap_asi.dat"
-
 
 
 
