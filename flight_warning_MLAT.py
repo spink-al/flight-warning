@@ -6,11 +6,16 @@
 Original idea: https://github.com/darethehair/flight-warning
 =======================================================================
 flight_warning.py
-version 2.20200226
+version 2.20200306
 
 =======================================================================
 Changes:
 =======================================================================
+v2.20200306
+- more metar/pressure tinkering, still not sure though, testing corr 3 ways (+/-/=) atm - enable/disable in conf
+- more conf settings
+- todo: sun&moon var names mixed :/
+
 v2.20200226
 - mlat from merged feed via VRS and FA
 - metar inactive
@@ -59,6 +64,7 @@ import ephem
 import re
 from math import atan2, sin, cos, acos, radians, degrees, atan, asin, sqrt, isnan
 import flight_warning_Conf
+#import flight_warning_Pressure
 
 if os.name == 'nt':
     print(os.name)
@@ -75,6 +81,9 @@ else:
 
     out_path = str(flight_warning_Conf.out_path)
     #out_path = '/tmp/out.txt'
+
+
+ignore_pressure = int(flight_warning_Conf.ignore_pressure)
 
 my_lat = float(flight_warning_Conf.MY_LAT)
 my_lon = float(flight_warning_Conf.MY_LON)
@@ -146,21 +155,22 @@ detected_sound                   = int(flight_warning_Conf.detected_sound)
 min_t_sound                    = float(flight_warning_Conf.min_t_sound)
 
 display_limit = int(flight_warning_Conf.display_limit)
+minimum_alt_transits= int(flight_warning_Conf.minimum_alt_transits) 
+#pressure = 1013
+pressure = int(flight_warning_Conf.pressure)
+
 #
 # set geographic location and elevation
 #
 my_elevation_const = my_alt # why                    #yourantennaelevation
 my_elevation = my_alt       # why                     #yourantennaelevation
-near_airport_elevation = 94
-
-#pressure = 1013
-pressure = int(flight_warning_Conf.pressure)
+near_airport_elevation = int(flight_warning_Conf.near_airport_elevation)
 
 
 gatech = ephem.Observer()
 
 gatech.lat, gatech.lon = str(my_lat), str(my_lon)
-gatech.elevation = my_elevation_const
+gatech.elevation = my_elevation_const # get rid of this _const use conf 
 
 #
 # calculate time zone for ISO date/timestamp
@@ -264,8 +274,11 @@ def transit_pred(obs2moon, plane_pos, track, velocity, elevation, moon_alt, moon
     # else:
         # my_elevation = my_elevation_const
     if not is_int_try(elevation):
-        return 0        
-    altitude1 = degrees(atan(int(elevation - my_elevation)/(dst_h2x*1000)))
+        return 0
+    # wtf again my_elevation again?!? corr? was it virt-in-future position???
+    #altitude1 = degrees(atan(int(elevation - my_elevation)/(dst_h2x*1000)))
+    altitude1 = degrees(atan(int(elevation)/(dst_h2x*1000)))
+    
     azimuth1 = atan2(sin(radians(lon3-my_lon)) * cos(radians(lat3)),  cos(radians(my_lat)) * sin(radians(lat3)) - sin(radians(my_lat))*cos(radians(lat3))*cos(radians(lon3-my_lon)))    
     azimuth1 = round(((degrees(azimuth1) + 360) % 360),1)
     
@@ -490,7 +503,7 @@ def tabela():
                         else:
                             wiersz += '{} {:7} {}'.format(RESET, str(pentry), RESET)                            ##flight
                         if is_float_try(plane_dict[pentry][4]):
-                            elevation=int(plane_dict[pentry][4])    
+                            elevation=int(plane_dict[pentry][4])
                         else:
                             elevation=9999
                         wiersz += '{} {:>6} {}'.format(elev_col(elevation), str(elevation),RESET)     ##elev
@@ -512,9 +525,13 @@ def tabela():
 
                         if is_float_try(plane_dict[pentry][13]):
                             if plane_dict[pentry][13] == 0:
-                                altitudeX = round(degrees(atan((elevation - my_elevation)/(float(0.01)*1000))) ,1)
+                                # my_elevation again :/
+                                #altitudeX = round(degrees(atan((elevation - my_elevation)/(float(0.01)*1000))) ,1)
+                                altitudeX = round(degrees(atan((elevation)/(float(0.01)*1000))) ,1)
                             else:
-                                altitudeX = round(degrees(atan((elevation - my_elevation)/(float(plane_dict[pentry][13])*1000))) ,1)
+                                # my_elevation again :/
+                                #altitudeX = round(degrees(atan((elevation - my_elevation)/(float(plane_dict[pentry][13])*1000))) ,1)
+                                altitudeX = round(degrees(atan((elevation)/(float(plane_dict[pentry][13])*1000))) ,1)
                         else:
                             altitudeX = '0'
                         wiersz += '{}{}{:>5}{}{}'.format(str(' ['), str(alt_col(float(altitudeX))), str(altitudeX),RESET, str(']'))    
@@ -608,7 +625,7 @@ def tabela():
 
                         # next 4 lines data for txt transit history
                         if transit_history_log == 1:
-                            if (-transit_separation_REDALERT_FG < separation_deg2 < transit_separation_REDALERT_FG) or (-transit_separation_REDALERT_FG < separation_deg < transit_separation_REDALERT_FG):
+                            if ((-transit_separation_REDALERT_FG < separation_deg2 < transit_separation_REDALERT_FG) and sun_alt > minimum_alt_transits)  or ((-transit_separation_REDALERT_FG < separation_deg < transit_separation_REDALERT_FG) and moon_alt > minimum_alt_transits):
                                 with open(transit_history_log_path,'a') as tra_txt:
                                     trans_wiersz = str(plane_dict[pentry][0])+wiersz+'\n'
                                     tra_txt.write(str(trans_wiersz))
@@ -625,9 +642,18 @@ def tabela():
                             zapis += str(plane_dict[pentry][16][ii])+';'
                         zapis += ','
                         zapis += str(plane_dict[pentry][17])+','+str(datetime.datetime.now().strftime('%H:%M:%S'))+','
-                        zapis += str(plane_dict[pentry][27])+','+str(separation_deg)+','+str(moon_az)+','+str(plane_dict[pentry][24])+','
-                        zapis += str(plane_dict[pentry][21])+','+str(separation_deg2)+','+str(sun_az)+','+str(plane_dict[pentry][19])+','
+
+                        if (moon_alt > minimum_alt_transits):
+                            zapis += str(plane_dict[pentry][27])+','+str(separation_deg)+','+str(moon_az)+','+str(plane_dict[pentry][24])+','
+                        else:
+                            zapis += ''+','+''+','+''+','+''+','
+                        if (sun_alt > minimum_alt_transits):
+                            zapis += str(plane_dict[pentry][21])+','+str(separation_deg2)+','+str(sun_az)+','+str(plane_dict[pentry][19])+','
+                        else:
+                            zapis += ''+','+''+','+''+','+''+','
+
                         zapis += str(vm.name)+','+str(vs.name)+','+str(diff_seconds)+',\n'
+
                         tsttxt.write(str(zapis))
                         
                 else:
@@ -703,13 +729,67 @@ def tabela():
         lastline+= str(len (plane_dict))
         lastline+= " --- "
         lastline+= str(int(diff_t))
-        lastline+= " --- "+ str(pressure)+"hPa"
+        if ignore_pressure == 1:
+            lastline+= " --- "+RED+"= "+RESET #+ str(pressure)+"hPa"
+        else:
+            lastline+= " --- "+YELLOW+"* "+RESET #+ str(pressure)+"hPa"
+        if (metar_active == 1 and ignore_pressure == 0):
+            lastline+= CYAN+str(pressure)+RESET+"hPa"+RESET
+        elif (metar_active == 0 and ignore_pressure == 1):
+            lastline+= RED+str(pressure)+RESET+"hPa"+RESET
+        elif (metar_active == 0 and ignore_pressure == 0):
+            lastline+= YELLOW+str(pressure)+RESET+"hPa"
+
         lastline+= " Started: "+str(started)#+" Ago: "+str(aktual_txx)
         print( lastline)
 
     return moon_alt, moon_az, sun_alt, sun_az 
 
 moon_alt, moon_az, sun_alt, sun_az = tabela()
+
+def pressure_corr(elevation):
+    global my_elevation
+    global my_elevation_const
+    global near_airport_elevation
+    #global pressure
+
+    if ignore_pressure == 1:
+        elevation=int(elevation)
+    else:
+        elevation=int(elevation)
+        pressure = int(get_metar_press())
+
+
+        my_elevation_local = my_elevation * 3.28084 # why? # -90 ## taka sama wysokosc punktu obserwacji n.p.m jak pas na EPPO
+        near_airport_elevation_local = near_airport_elevation * 3.28084
+
+        if elevation > 6500: # m or ft at this stage? 
+
+            # elev > 6500m altimeters calibrated to 1013hPa
+            elevation = elevation + ((1013 - pressure)*30) # now it's missing diff to my_elev!?!?
+            #my_elevation = my_elevation_const #  wtf why? # my_elev was somewhere set to airport elev
+
+        # elif, transition zone, but fok et
+        else:
+
+            # below 6500 altimeters calibrated to local airport pressure
+            # we need diff between elev of observation point and airport!
+
+            # todo
+            #near_airport_elevation
+            # probably this one is correct +/- diff between elev of observation point and airport
+            elevation = elevation - (my_elevation_local - near_airport_elevation_local)
+
+
+            #elevation - ((1013 - pressure)*30)) - my_elevation)
+            #elevation = elevation #- ((1013 - pressure)*30) - my_elevation)
+            #elevation = elevation - (((1013 - pressure)*30) - my_elevation) # adsb elev - ( pressure_corr - my_elev ) #30ft or m??
+
+            # pfff, not sure, testing atm # probably unwanted mix with > 6500ft :/
+            # elevation = (elevation + ((1013 - pressure)*30)) - my_elevation # adsb elev - ( pressure_corr - my_elev ) #30ft or m??
+
+
+    return elevation
 #
 # loop through all records from dump1090 port 10003 input stream on stdin
 #
@@ -768,21 +848,9 @@ while True:
             flight = parts[10].strip()
             elevation = parts[11].strip()
             if is_int_try(elevation):
-                elevation=int(elevation) #wtf is this??
-                if elevation > 6500: # m or ft at this stage? 
-                    pressure = int(get_metar_press())
-                    elevation = elevation + ((1013 - pressure)*30) # test case > 6500m 
-                    my_elevation = my_elevation_const #  wtf why?
-                else:
-                    my_elevation = my_elevation # why? # -90 ## taka sama wysokoÄąâ€şĂ„â€ˇ punktu obserwacji n.p.m jak pas na EPPO
-                    #elevation = elevation - my_elevation
-                    #elevation - ((1013 - pressure)*30)) - my_elevation)
-                    #elevation = elevation #- ((1013 - pressure)*30) - my_elevation)
-                    
-                    # pfff, not sure, testing atm
-                    elevation = elevation - (((1013 - pressure)*30) - my_elevation) # adsb elev - ( pressure_corr - my_elev ) #30ft or m??
+                elevation=int(elevation)
+                elevation = pressure_corr(elevation)
 
-                ## 
                 if (metric_units):
                     elevation = float((elevation * 0.3048)) # convert elevation feet to meters
                 else:
@@ -824,27 +892,15 @@ while True:
             elevation = parts[11].strip() # assumes dump1090 is outputting elevation in feet 
             if is_int_try(elevation):
                 elevation=int(elevation)
-                if elevation > 6500: # m or ft at this stage? 
-                    pressure = int(get_metar_press())
-                    elevation = elevation + ((1013 - pressure)*30)
-                    my_elevation = my_elevation_const
-                else:
-                    my_elevation = my_elevation # why? 90 #-90 ## taka sama wysokoÄąâ€şĂ„â€ˇ punktu obserwacji n.p.m jak pas na EPPO
-                    #elevation = my_elevation + (elevation + ((1013 - pressure)*30))
-                    #elevation = elevation - my_elevation
-                    
-                    # pfff, not sure, testing atm
-                    elevation = elevation - (((1013 - pressure)*30) - my_elevation) # adsb elev - ( pressure_corr - my_elev ) #30ft or m??
-
-
+                elevation = pressure_corr(elevation)
 
                 if (metric_units):
                     elevation = float((elevation * 0.3048)) # convert elevation feet to meters
 
                 else:
                     elevation = ""
-            elevation_units = "ft"
-            distance_units = "mi"
+                    elevation_units = "ft"
+                    distance_units = "mi"
 
             try:
                 plane_lat = float(parts[14])
@@ -863,7 +919,10 @@ while True:
                     azimuth = round(((degrees(azimuth) + 360) % 360),1)
                     if distance == 0:
                         distance = 0.01    
-                    altitude = degrees(atan((elevation - my_elevation)/(distance*1000))) # distance converted from kilometers to meters to match elevation
+
+                    # what with my_elevation ?! wtf?
+                    #altitude = degrees(atan((elevation - my_elevation)/(distance*1000))) # distance converted from kilometers to meters to match elevation
+                    altitude = degrees(atan((elevation)/(distance*1000))) # distance converted from kilometers to meters to match elevation
                     altitude = round(altitude,1)
                     if (icao not in plane_dict):
                         if (typemlat == "MLAT"):
@@ -1009,7 +1068,7 @@ while True:
                 else:
                     separation_deg = 90.0
                 if (-transit_separation_sound_alert < separation_deg < transit_separation_sound_alert):
-                    if sun_tr_sound == 1:
+                    if (sun_tr_sound == 1 and moon_alt > minimum_alt_transits): # cos tu jest na odwrot
                         gong() # SUN!!!
                         #pass
                 
@@ -1041,7 +1100,7 @@ while True:
                 else:
                     separation_deg2 = 90.0
                 if (-transit_separation_sound_alert < separation_deg2 < transit_separation_sound_alert):
-                    if moon_tr_sound == 1:
+                    if (moon_tr_sound == 1 and sun_alt > minimum_alt_transits): # cos tu jest na odwrot
                         gong()
                         #pass
 
