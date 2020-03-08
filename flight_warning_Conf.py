@@ -7,17 +7,17 @@ MY_LON="15.1234"
 # Meters above sea level
 MY_ALT="90"
 
+minus_hour="0" # 1 if VRS is adding 60 minutes to date in messages
+
 # data output to file, for no output change "/tmp/out.txt" to "/dev/null"
-# out_path="C:\\some_folder\\out.txt" # windows \\ in path should work
 out_path="/tmp/out.txt"
 
 # need more tests:
 metar_active="0" # 0/1
-#metar_path="C:\\some_folder\\metar.txt"  # windows \\ in path should work
 metar_path="/tmp/metar.txt"
 # if metar not available (0) use this pressure:
 pressure="1013"
-ignore_pressure="1" # ignore metar&pressure completely/use 1013hPa
+ignore_pressure="1"
 near_airport_code="EPPO" # EPPO EDDB etc not POZ SXF
 near_airport_elevation="94"
 
@@ -31,8 +31,9 @@ transit_separation_sound_alert="2.2" #deg # maximum transit angle separation for
 transit_separation_REDALERT_FG="5" # maximum transit angle separation for red colouring in table 
 transit_separation_GREENALERT_FG="3" # maximum transit angle separation for green colouring in table 
 transit_separation_notignored="90" # don't touch
+xtd_tst="20" # km
 
-minimum_alt_transits="5" # don't bother if sun/moon below this (deg)
+minimum_alt_transits="5"
 
 # write transit history to file, (with colours, tail -f /tmp/tr.txt or less -r /tmp/tr.txt):
 transit_history_log="0" # 1/0
@@ -53,6 +54,4 @@ min_t_sound="2.0" # float for test
 # write data for 3d heatmaps to file (lat,lon,alt,):
 heatmap_latlon_log="0"
 heatmap_latlon_log_path="/tmp/_heatmap_asi.dat"
-
-
 
