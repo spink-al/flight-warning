@@ -6,16 +6,11 @@
 Original idea: https://github.com/darethehair/flight-warning
 =======================================================================
 flight_warning.py
-version 2.20200306
+version 2.20200226
 
 =======================================================================
 Changes:
 =======================================================================
-v2.20200306
-- more metar/pressure tinkering, still not sure though, testing corr 3 ways (+/-/=) atm - enable/disable in conf
-- more conf settings
-- todo: sun&moon var names mixed :/
-
 v2.20200226
 - mlat from merged feed via VRS and FA
 - metar inactive
@@ -88,6 +83,8 @@ ignore_pressure = int(flight_warning_Conf.ignore_pressure)
 my_lat = float(flight_warning_Conf.MY_LAT)
 my_lon = float(flight_warning_Conf.MY_LON)
 my_alt = int(flight_warning_Conf.MY_ALT)
+
+minus_hour = int(flight_warning_Conf.minus_hour)
 
 
 
@@ -278,10 +275,10 @@ def transit_pred(obs2moon, plane_pos, track, velocity, elevation, moon_alt, moon
     # wtf again my_elevation again?!? corr? was it virt-in-future position???
     #altitude1 = degrees(atan(int(elevation - my_elevation)/(dst_h2x*1000)))
     altitude1 = degrees(atan(int(elevation)/(dst_h2x*1000)))
-    
-    azimuth1 = atan2(sin(radians(lon3-my_lon)) * cos(radians(lat3)),  cos(radians(my_lat)) * sin(radians(lat3)) - sin(radians(my_lat))*cos(radians(lat3))*cos(radians(lon3-my_lon)))    
+
+    azimuth1 = atan2(sin(radians(lon3-my_lon)) * cos(radians(lat3)),  cos(radians(my_lat)) * sin(radians(lat3)) - sin(radians(my_lat))*cos(radians(lat3))*cos(radians(lon3-my_lon)))
     azimuth1 = round(((degrees(azimuth1) + 360) % 360),1)
-    
+
     ## the distance from the CURRENT position of the airplane to the calculated position of the aircraft when it CROSSES the azimuth of the moon
     dst_p2x = round(haversine((plane_pos[0], plane_pos[1]), (lat3, lon3)),1) 
     if not velocity == '':
@@ -290,7 +287,6 @@ def transit_pred(obs2moon, plane_pos, track, velocity, elevation, moon_alt, moon
         velocity = 900 # only used for transit countdown
     delta_time = (dst_p2x / velocity)*3600
 
-    
     moon_alt_B = 90.00 - moon_alt
     ideal_dist = (sin(radians(moon_alt_B))*elevation) / sin(radians(moon_alt)) / 1000
     ideal_lat = asin((sin(radians(my_lat)) * cos(ideal_dist/earth_R)) + (cos(radians(my_lat)) * sin(ideal_dist/earth_R) * cos(radians(moon_az))))
@@ -484,6 +480,9 @@ def tabela():
         with open(out_path,'w') as tsttxt:
             tsttxt.write('')
         for pentry in plane_dict:
+            #print( plane_dict[pentry])
+            #print('8', plane_dict[pentry][8],'9',plane_dict[pentry][9],'12',plane_dict[pentry][12],plane_dict[pentry][5],plane_dict[pentry][10] )
+
             with open(out_path,'a') as tsttxt:
                 if not (plane_dict[pentry][5] == '') and (plane_dict[pentry][5] <= display_limit):
                         if plane_dict[pentry][17] != "":
@@ -495,9 +494,12 @@ def tabela():
                             
                         then1 = plane_dict[pentry][0]
                         now1 = datetime.datetime.now()
-                        diff_minutes = (now1 - then1).total_seconds() / 60.
+                        diff_minutes = (now1 - then1).total_seconds() / 60.0
 
                         wiersz = ''
+
+
+                        # 1st section
                         if plane_dict[pentry][1] != "":
                             wiersz += '{} {:7} {}'.format(YELLOW, str(plane_dict[pentry][1]), RESET)                                                 ##flight
                         else:
@@ -512,17 +514,8 @@ def tabela():
                         wiersz += '{} {:>5} {}'.format(dist_col(plane_dict[pentry][5]), str(plane_dict[pentry][5]),RESET)    ## dist
                         wiersz += '|'
 
-                        if (plane_dict[pentry][12] == 'WARNING' and plane_dict[pentry][9] != "RECEDING"):
-                            wiersz += '{}{}{:>5}{}{}'.format(str('['),REDALERT, str( plane_dict[pentry][13]),RESET, str(']'))                    ## warn
-                        elif (plane_dict[pentry][12] == 'WARNING' and plane_dict[pentry][9] == "RECEDING"):
-                            wiersz += '{}{}{:>5}{}{}'.format(str('['),RED, str( plane_dict[pentry][13]),RESET, str(']'))                            ## warn
-                        elif (plane_dict[pentry][12] != 'WARNING' and plane_dict[pentry][9] == "RECEDING"):
-                            wiersz += '{}{}{:>5}{}{}'.format(str('['),PURPLEDARK, str( plane_dict[pentry][13]),RESET, str(']'))                    ## warn
-                        else:
-                            wiersz += '{}{}{:>5}{}{}'.format(str('['),PURPLE, str(plane_dict[pentry][13]),RESET, str(']'))                        ## warn
-                        
-                        
 
+                        # Predicted closest altitude in degrees
                         if is_float_try(plane_dict[pentry][13]):
                             if plane_dict[pentry][13] == 0:
                                 # my_elevation again :/
@@ -534,9 +527,43 @@ def tabela():
                                 altitudeX = round(degrees(atan((elevation)/(float(plane_dict[pentry][13])*1000))) ,1)
                         else:
                             altitudeX = '0'
-                        wiersz += '{}{}{:>5}{}{}'.format(str(' ['), str(alt_col(float(altitudeX))), str(altitudeX),RESET, str(']'))    
+
+                        # Predicted closest dissance in km
+                        if (plane_dict[pentry][12] == 'WARNING'):
+                            if (plane_dict[pentry][9] == "RECEDING" or plane_dict[pentry][8] == "LEAVING"):
+                                wiersz += '{}{}{:>5}{}{}'.format(str('['),RED, str( plane_dict[pentry][13]),RESET, str(']')) 
+                                wiersz += '{}{}{:>5}{}{}'.format(str(' ['), str(alt_col(plane_dict[pentry][7])), str(altitudeX),RESET, str(']'))    # kolorowanie dla aktualnej alt
+
+                            elif (str(plane_dict[pentry][9]) == "APPROACHING"):
+                                wiersz += '{}{}{:>5}{}{}'.format(str('['),REDALERT, str( plane_dict[pentry][13]),RESET, str(']'))
+                                wiersz += '{}{}{:>5}{}{}'.format(str(' ['), str(alt_col(float(altitudeX))), str(altitudeX),RESET, str(']'))    # kolorowanie dla przewidzianej alt
+
+                            else:
+                                wiersz += '{}{}{:>5}{}{}'.format(str('['),RESET, str( plane_dict[pentry][13]),RESET, str(']'))
+                                wiersz += '{}{}{:>5}{}{}'.format(str(' ['), str(alt_col(float(altitudeX))), str(altitudeX),RESET, str(']'))    # kolorowanie dla przewidzianej alt
+
+                        else:
+                            if (plane_dict[pentry][9] == "RECEDING" or plane_dict[pentry][8] == "LEAVING"):
+                                wiersz += '{}{}{:>5}{}{}'.format(str('['),PURPLEDARK, str( plane_dict[pentry][13]),RESET, str(']'))
+                                wiersz += '{}{}{:>5}{}{}'.format(str(' ['), str(alt_col(plane_dict[pentry][7])), str(altitudeX),RESET, str(']'))    # kolorowanie dla aktualnej alt
+
+                            elif (str(plane_dict[pentry][9]) == "APPROACHING"):
+                                wiersz += '{}{}{:>5}{}{}'.format(str('['),PURPLE, str( plane_dict[pentry][13]),RESET, str(']')) 
+                                wiersz += '{}{}{:>5}{}{}'.format(str(' ['), str(alt_col(float(altitudeX))), str(altitudeX),RESET, str(']'))    # kolorowanie dla przewidzianej altt
+                            else:
+
+                                wiersz += '{}{}{:>5}{}{}'.format(str('['),RESET, str( plane_dict[pentry][13]),RESET, str(']'))
+                                wiersz += '{}{}{:>5}{}{}'.format(str(' ['), str(alt_col(float(altitudeX))), str(altitudeX),RESET, str(']'))    # kolorowanie dla przewidzianej alt
+
+
                         wiersz += ' |'
+
+
+
+                        # Current altitude in degrees
                         wiersz += '{} {:>5} {}'.format(alt_col(plane_dict[pentry][7]), str(plane_dict[pentry][7]),RESET)    ## Alt
+
+                        # x/!/o latest msg age in pictograms :S (msg type 3 with position ())
                         if diff_seconds >= 999:
                             wiersz += '{}'.format(RED+str("x") +RESET)    
                         elif diff_seconds > 30:
@@ -622,7 +649,7 @@ def tabela():
                         wiersz += '{:>6}'.format(str(round(diff_secx, 1)))
 
                         print( wiersz)
-
+                        #rint('8', plane_dict[pentry][8],'9',plane_dict[pentry][9],'12',plane_dict[pentry][12],plane_dict[pentry][5],plane_dict[pentry][10] )
                         # next 4 lines data for txt transit history
                         if transit_history_log == 1:
                             if ((-transit_separation_REDALERT_FG < separation_deg2 < transit_separation_REDALERT_FG) and sun_alt > minimum_alt_transits)  or ((-transit_separation_REDALERT_FG < separation_deg < transit_separation_REDALERT_FG) and moon_alt > minimum_alt_transits):
@@ -652,7 +679,9 @@ def tabela():
                         else:
                             zapis += ''+','+''+','+''+','+''+','
 
-                        zapis += str(vm.name)+','+str(vs.name)+','+str(diff_seconds)+',\n'
+                        zapis += str(vm.name)+','+str(vs.name)+','+str(diff_seconds)+','
+                        zapis += str(altitudeX)+','
+                        zapis += '\n'
 
                         tsttxt.write(str(zapis))
                         
@@ -814,10 +843,13 @@ while True:
         date = parts[6].strip()
         time = parts[7].strip()
         if (typemlat == "MLAT"):
-            date_time_local = datetime.datetime.strptime(date + " " + time, '%Y/%m/%d %H:%M:%S.%f') #+ datetime.timedelta(minutes=60)
+            date_time_local = datetime.datetime.strptime(date + " " + time, '%Y/%m/%d %H:%M:%S.%f') + datetime.timedelta(minutes=60)
         else:
-            date_time_local = datetime.datetime.strptime(date + " " + time, '%Y/%m/%d %H:%M:%S.%f')- datetime.timedelta(minutes=60)
-        date_time_iso = datetime.datetime.strftime(date_time_local, '%Y-%m-%dT%H:%M:%S.%f') + str("%+d" % (-timezone_hours)).zfill(3)
+            if int(minus_hour) == 1:
+                date_time_local = datetime.datetime.strptime(date + " " + time, '%Y/%m/%d %H:%M:%S.%f') - datetime.timedelta(minutes=60)
+            else:
+                date_time_local = datetime.datetime.strptime(date + " " + time, '%Y/%m/%d %H:%M:%S.%f')
+        #date_time_iso = datetime.datetime.strftime(date_time_local, '%Y-%m-%dT%H:%M:%S.%f') + str("%+d" % (-timezone_hours)).zfill(3)
         
         #
         # check age of newest icao record, compare to newly-input value, and kill dictionary if too old (i.e. start fresh history)
@@ -918,7 +950,7 @@ while True:
                     azimuth = atan2(sin(radians(plane_lon-my_lon))*cos(radians(plane_lat)), cos(radians(my_lat))*sin(radians(plane_lat))-sin(radians(my_lat))*cos(radians(plane_lat))*cos(radians(plane_lon-my_lon)))
                     azimuth = round(((degrees(azimuth) + 360) % 360),1)
                     if distance == 0:
-                        distance = 0.01    
+                        distance = 0.01
 
                     # what with my_elevation ?! wtf?
                     #altitude = degrees(atan((elevation - my_elevation)/(distance*1000))) # distance converted from kilometers to meters to match elevation
@@ -931,44 +963,61 @@ while True:
                         else:
                             plane_dict[icao] = [date_time_local, "", plane_lat, plane_lon, elevation, float(distance), azimuth, altitude, "", "", float(distance), "", "", "", "", [], [], "", "", "", "", "", "", "", "", "", "", "", ""]
                         plane_dict[icao][15] = []
-                        plane_dict[icao][16] = []    
+                        plane_dict[icao][16] = []
                         plane_dict[icao][15].append(azimuth)
-                        plane_dict[icao][16].append(altitude)                
+                        plane_dict[icao][16].append(altitude)
                     else:
                         #
                         # figure out if plane is approaching/holding/receding
                         #
-                        if not (plane_dict[icao][5] == '' or plane_dict[icao][10] == ''):
-                            distance = plane_dict[icao][5]
-                            min_distance = plane_dict[icao][10]
-                            if (distance < min_distance):
-                                plane_dict[icao][9] = "APPROACHING"
-                                plane_dict[icao][10] = distance
-                            elif (distance > min_distance):
-                                plane_dict[icao][9] = "RECEDING"
-                            else:
-                                plane_dict[icao][9] = "HOLDING"
+                        if not is_float_try(plane_dict[icao][5]):
+                            print( plane_dict[icao][5] )
+                            if plane_dict[icao][5] == '':
+                                plane_dict[icao][5] = float(distance)
+                        if not is_float_try(plane_dict[icao][10]):
+                            print( plane_dict[icao][10] )
+                            if plane_dict[icao][10] == '':
+                                plane_dict[icao][10] = float(distance)
+
+                        #print( plane_dict[icao][5] )
+                        #print( plane_dict[icao][10])
+                        #if not (plane_dict[icao][5] == '' or plane_dict[icao][10] == ''):
+                        #distance = plane_dict[icao][10]
+                        min_distance = plane_dict[icao][5]
+
+                        if (distance < min_distance):
+                            plane_dict[icao][9] = "APPROACHING"
+                            #print("kupa")
+                            #plane_dict[icao][10] = distance
+
+                        elif (distance > min_distance):
+                            plane_dict[icao][9] = "RECEDING"
+                            #plane_dict[icao][10] = distance
+
+                        else:
+                            #plane_dict[icao][9] = "HOLDING"
+                            plane_dict[icao][5] = float(distance)
 
                         if (typemlat == "MLAT"):
                             track = parts[13].strip()
                             plane_dict[icao][11] = track
-                        
+
                         plane_dict[icao][0] = date_time_local
                         plane_dict[icao][2] = plane_lat
                         plane_dict[icao][3] = plane_lon
-                        plane_dict[icao][4] = elevation 
-                        plane_dict[icao][5] = distance 
-                        plane_dict[icao][6] = azimuth 
-                        plane_dict[icao][7] = altitude 
-                        
+                        plane_dict[icao][4] = elevation
+                        plane_dict[icao][5] = distance
+                        plane_dict[icao][6] = azimuth
+                        plane_dict[icao][7] = altitude
+
                         if plane_dict[icao][17] == '':
                             plane_dict[icao][17] = date_time_local
-                        
+
                         then = plane_dict[icao][17]
                         now = datetime.datetime.now()
                         diff_seconds = (now - then).total_seconds()
                         if (diff_seconds > 6):
-                            
+
                             plane_dict[icao][17] = date_time_local
 
                             poz_az = str(plane_dict[icao][6])
@@ -1003,7 +1052,7 @@ while True:
             xtd               = crosstrack(distance, (180 + azimuth) % 360, track)
             
             plane_dict[icao][13] = xtd
-            
+
             if (xtd <= xtd_tst and distance < warning_distance and warning == "" and direction != "RECEDING"):
                 plane_dict[icao][12] = "WARNING"
                 plane_dict[icao][13] = xtd
@@ -1018,7 +1067,7 @@ while True:
 
             if (plane_dict[icao][8] == ""):
                 plane_dict[icao][8] = "LINKED!"
-        
+
             #
             # if plane enters detection zone, send email and begin history capture
             #
