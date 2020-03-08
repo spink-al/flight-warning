@@ -843,7 +843,10 @@ while True:
         date = parts[6].strip()
         time = parts[7].strip()
         if (typemlat == "MLAT"):
-            date_time_local = datetime.datetime.strptime(date + " " + time, '%Y/%m/%d %H:%M:%S.%f') + datetime.timedelta(minutes=60)
+            if int(minus_hour) == 1:
+                date_time_local = datetime.datetime.strptime(date + " " + time, '%Y/%m/%d %H:%M:%S.%f') #+ datetime.timedelta(minutes=60)
+            else:
+                date_time_local = datetime.datetime.strptime(date + " " + time, '%Y/%m/%d %H:%M:%S.%f')
         else:
             if int(minus_hour) == 1:
                 date_time_local = datetime.datetime.strptime(date + " " + time, '%Y/%m/%d %H:%M:%S.%f') - datetime.timedelta(minutes=60)
