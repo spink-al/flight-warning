@@ -9,11 +9,11 @@ MY_ALT="90"
 
 
 # timestamp diff
-time_corr="1"
+time_corr="0"
 minutes_add="-60"
 
 # timestamp diff mlat
-time_corr_mlat="1"
+time_corr_mlat="0"
 minutes_add_mlat="-60"
 
 
