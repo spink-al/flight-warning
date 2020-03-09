@@ -6,7 +6,7 @@
 Original idea: https://github.com/darethehair/flight-warning
 =======================================================================
 flight_warning.py
-version 2.20200226
+version 2.20200309
 
 =======================================================================
 Changes:
@@ -852,7 +852,7 @@ while True:
         if (typemlat == "MLAT"):
             if int(time_corr_mlat) == 1:
                 date_time_local = datetime.datetime.strptime(date + " " + time, '%Y/%m/%d %H:%M:%S.%f') + datetime.timedelta(minutes=minutes_add_mlat)
-                print('----')
+                #print('----')
             else:
                 date_time_local = datetime.datetime.strptime(date + " " + time, '%Y/%m/%d %H:%M:%S.%f')
         else:
