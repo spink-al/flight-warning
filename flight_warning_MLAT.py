@@ -11,11 +11,7 @@ version 2.20200226
 =======================================================================
 Changes:
 =======================================================================
-v2.20200226
-- mlat from merged feed via VRS and FA
-- metar inactive
-- writing data for matplotlib allsky
-- python3-ready (most diff changes will be indent tabs vs spaces
+v2.20200309
 
 v0.2
 - try/except for plane lat/lon in MSG 3
@@ -84,7 +80,14 @@ my_lat = float(flight_warning_Conf.MY_LAT)
 my_lon = float(flight_warning_Conf.MY_LON)
 my_alt = int(flight_warning_Conf.MY_ALT)
 
-minus_hour = int(flight_warning_Conf.minus_hour)
+time_corr = int(flight_warning_Conf.time_corr)
+minutes_add = int(flight_warning_Conf.minutes_add)
+
+time_corr_mlat = int(flight_warning_Conf.time_corr_mlat)
+minutes_add_mlat = int(flight_warning_Conf.time_corr_mlat)
+
+time_corr_ephem = int(flight_warning_Conf.time_corr_ephem)
+minutes_add_ephem = int(flight_warning_Conf.time_corr_ephem)
 
 
 
@@ -432,9 +435,13 @@ def clean_dict():
 
 def tabela():
     global last_t
+    if time_corr_ephem == "1":
+        #print("aaa")
+        d_t1 = datetime.datetime.utcnow() + datetime.timedelta(minutes=int(minutes_add_ephem))
+        gatech.date = ephem.Date(d_t1)
+    else:
+        gatech.date = ephem.now()
     
-    
-    gatech.date = ephem.now()
     # vm for right table slot, vs for left table slot 
     vs = ephem.Moon(gatech)
     vm = ephem.Sun(gatech)
@@ -843,14 +850,17 @@ while True:
         date = parts[6].strip()
         time = parts[7].strip()
         if (typemlat == "MLAT"):
-            if int(minus_hour) == 1:
-                date_time_local = datetime.datetime.strptime(date + " " + time, '%Y/%m/%d %H:%M:%S.%f') #+ datetime.timedelta(minutes=60)
+            if int(time_corr_mlat) == 1:
+                date_time_local = datetime.datetime.strptime(date + " " + time, '%Y/%m/%d %H:%M:%S.%f') + datetime.timedelta(minutes=minutes_add_mlat)
+                print('----')
             else:
                 date_time_local = datetime.datetime.strptime(date + " " + time, '%Y/%m/%d %H:%M:%S.%f')
         else:
-            if int(minus_hour) == 1:
-                date_time_local = datetime.datetime.strptime(date + " " + time, '%Y/%m/%d %H:%M:%S.%f') - datetime.timedelta(minutes=60)
+            if int(time_corr) == 1:
+                #print('----')#minutes_add
+                date_time_local = datetime.datetime.strptime(date + " " + time, '%Y/%m/%d %H:%M:%S.%f') + datetime.timedelta(minutes=minutes_add)
             else:
+                #print('norm')
                 date_time_local = datetime.datetime.strptime(date + " " + time, '%Y/%m/%d %H:%M:%S.%f')
         #date_time_iso = datetime.datetime.strftime(date_time_local, '%Y-%m-%dT%H:%M:%S.%f') + str("%+d" % (-timezone_hours)).zfill(3)
         
