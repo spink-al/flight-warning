@@ -7,7 +7,15 @@ MY_LON="15.1234"
 # Meters above sea level
 MY_ALT="90"
 
-minus_hour="0" # 1 if VRS is adding 60 minutes to date in messages
+
+# timestamp diff
+time_corr="1"
+minutes_add="-60"
+
+# timestamp diff mlat
+time_corr_mlat="1"
+minutes_add_mlat="-60"
+
 
 # data output to file, for no output change "/tmp/out.txt" to "/dev/null"
 out_path="/tmp/out.txt"
@@ -55,3 +63,6 @@ min_t_sound="2.0" # float for test
 heatmap_latlon_log="0"
 heatmap_latlon_log_path="/tmp/_heatmap_asi.dat"
 
+# not working todo
+time_corr_ephem="0"
+minutes_add_ephem="0"
