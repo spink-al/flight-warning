@@ -639,13 +639,13 @@ def countdown_m(sekundy, countdown_licznik):
     if (countdown_licznik >= 0): 
      if (last_sekundy == -1) or (last_sekundy > sekundy):
         print('x')
-        if sekundy > 186:
-            footer = '<script>audioElementm.play();sleep(700).then(() => {;'
-            footer += 'audioElement20.play(); sleep(700).then(() => {;audioElementmin.play();  }) })</script>'
-            countdown_licznik += 1
-            last_sekundy = sekundy
+        #if sekundy > 186:
+        #    footer = '<script>audioElementm.play();sleep(700).then(() => {;'
+        #    footer += 'audioElement20.play(); sleep(700).then(() => {;audioElementmin.play();  }) })</script>'
+        #    countdown_licznik += 1
+        #   last_sekundy = sekundy
 
-        elif 179 <= sekundy <= 181:
+        if 179 <= sekundy <= 181:
             footer = '<script>audioElementm.play();sleep(700).then(() => {;'
             footer += 'audioElement3.play(); sleep(700).then(() => {;audioElementmin.play();  }) })</script>'
             countdown_licznik += 1
