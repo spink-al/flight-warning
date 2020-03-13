@@ -1,9 +1,3 @@
-# Do not use spaces between var name and "=" or after it,
-# *conf.py files are used also by bash scripts, and this will creep them out!
-
-# Lat/Lon
-MY_LAT="51.1234"
-MY_LON="15.1234"
 # Meters above sea level
 MY_ALT="90"
 
@@ -19,8 +13,16 @@ minutes_add_mlat="-60"
 
 
 # data output to file, for no output change "/tmp/out.txt" to "/dev/null"
+gen_term="0" # 0 will disable data in terminal
 out_path="/tmp/out.txt"
-out_path_html="/tmo/out6.html"
+
+gen_html="1" # 0 will disable html and html play wav with countdown 3m,2m,1m,50s,40,30,20,10,9,8,7,6,5,4,3,2,1,0s
+out_path_html="/tmp/out6.html"
+
+gen_html_snd="1" # 0 will disable html play wav with countdown 3m,2m,1m,50s,40,30,20,10,9,8,7,6,5,4,3,2,1,0s
+out_path_html_snd="/tmp/out7.html"
+
+
 
 # need more tests:
 metar_active="0" # 0/1
@@ -40,14 +42,14 @@ alert_distance="35" # km
 # comparison value for "xtd"/"cross-track error routine" calculated minimal distance at which plane will be near observator(?)
 xtd_tst="40" # km
 
-# maximum transit angle separation for sound alert
-transit_separation_sound_alert="2.2"
+# maximum transit angle separation for sound alert 
+transit_separation_sound_alert="1.5" # terminal beeps and/or html play wav with countdown 3m,2m,1m,50s,40,30,20,10,9,8,7,6,5,4,3,2,1,0s
 # maximum transit angle separation for colouring in table 
-transit_separation_REDALERT_FG="10"
-transit_separation_GREENALERT_FG="5"
+transit_separation_REDALERT_FG="20"
+transit_separation_GREENALERT_FG="10"  # terminal beeps and/or html play wav with countdown 3m,2m,1m,50s,40,30,20,10,9,8,7,6,5,4,3,2,1,0s
 transit_separation_notignored="90"
 
-minimum_alt_transits="5"
+minimum_alt_transits="5"   # terminal beeps and/or html play wav with countdown 3m,2m,1m,50s,40,30,20,10,9,8,7,6,5,4,3,2,1,0s
 
 # write transit history to file, (with colours, tail -f /tmp/tr.txt or less -r /tmp/tr.txt):
 transit_history_log="0" # 1/0
@@ -55,15 +57,18 @@ transit_history_log_path="/tmp/tr.txt"
 
 # enable/disable sounds alerts:
 # Sun transits:
-sun_tr_sound="0" # 1/0
+sun_tr_sound="1" # 1/0   # terminal beeps and/or html play wav with countdown 3m,2m,1m,50s,40,30,20,10,9,8,7,6,5,4,3,2,1,0s
 # Moon transits:
-moon_tr_sound="0" # 1/0
+moon_tr_sound="1" # 1/0   # terminal beeps and/or html play wav with countdown 3m,2m,1m,50s,40,30,20,10,9,8,7,6,5,4,3,2,1,0s
+
+# terminal beeps
+terminal_beeps="0" #1/0 # master mute for terminal beeps
 # Entering detection zone:
-entering_sound="0" # 1/0
+entering_sound="1" # 1/0 terminal beeps only
 # New plane that will enter detection zone in near future:
-detected_sound="0" # 1/0
+detected_sound="1" # 1/0 terminal beeps only
 # how often gong can be released in seconds (putty/terminal settings may use longer timeouts if bell is overused!)
-min_t_sound="1.0" # float for test
+min_t_sound="1.0" # float for test # seconds between terminal beeps, can be altered by putty/terminal conf
 
 # write data for 3d heatmaps to file (lat,lon,alt,):
 heatmap_latlon_log="0"
