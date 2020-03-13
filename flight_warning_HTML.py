@@ -6,12 +6,12 @@
 Original idea: https://github.com/darethehair/flight-warning
 =======================================================================
 flight_warning.py
-version 2.20200226
+version 3.20200313 (web)
 
 =======================================================================
 Changes:
 =======================================================================
-v3.20200311 (web)
+v3.20200313 (web)
 
 v0.2
 - try/except for plane lat/lon in MSG 3
@@ -56,6 +56,8 @@ import re
 from math import atan2, sin, cos, acos, radians, degrees, atan, asin, sqrt, isnan
 import flight_warning_Conf
 #import flight_warning_Pressure
+sols = u"\u2609"
+luns = u"\u263d"
 
 last_sekundy = -1
 footer=''
@@ -68,6 +70,7 @@ if os.name == 'nt':
 
     out_path = str(flight_warning_Conf.out_path) # windows \\ in path should work
     out_path_html = str(flight_warning_Conf.out_path_html) # windows \\ in path should work
+    out_path_html_snd = str(flight_warning_Conf.out_path_html_snd) # windows \\ in path should work
 else:
     print(os.name)
     metar_active = int(flight_warning_Conf.metar_active)
@@ -75,6 +78,7 @@ else:
 
     out_path = str(flight_warning_Conf.out_path)
     out_path_html = str(flight_warning_Conf.out_path_html) # windows \\ in path should work
+    out_path_html_snd = str(flight_warning_Conf.out_path_html_snd) # windows \\ in path should work
 
     #out_path = '/tmp/out.txt'
 
@@ -94,6 +98,11 @@ minutes_add_mlat = int(flight_warning_Conf.time_corr_mlat)
 time_corr_ephem = int(flight_warning_Conf.time_corr_ephem)
 minutes_add_ephem = int(flight_warning_Conf.time_corr_ephem)
 
+gen_html = int(flight_warning_Conf.gen_html)
+gen_html_snd = int(flight_warning_Conf.gen_html_snd)
+
+gen_term = int(flight_warning_Conf.gen_term)
+
 
 print( "Starting...")
 started = datetime.datetime.now()
@@ -101,6 +110,8 @@ started = datetime.datetime.now()
 
 deg = u'\xb0'
 earth_R = 6371
+sols = u"\u2609"
+luns = u"\u263d"
 
 #TERMINAL COLORS
 REDALERT        = '\x1b[1;37;41m'
@@ -129,6 +140,8 @@ metric_units = True # inactive
 
 aktual_t = datetime.datetime.now()
 last_t = datetime.datetime.now() - datetime.timedelta(seconds=10)
+last_t_terminal = datetime.datetime.now() - datetime.timedelta(seconds=10)
+
 metar_t = datetime.datetime.now() - datetime.timedelta(minutes=20)
 gong_t = datetime.datetime.now()
 #
@@ -153,6 +166,8 @@ heatmap_latlon_log_path          = str(flight_warning_Conf.heatmap_latlon_log_pa
 
 sun_tr_sound                     = int(flight_warning_Conf.sun_tr_sound)
 moon_tr_sound                    = int(flight_warning_Conf.moon_tr_sound)
+
+terminal_beeps                   = int(flight_warning_Conf.terminal_beeps)
 entering_sound                   = int(flight_warning_Conf.entering_sound)
 detected_sound                   = int(flight_warning_Conf.detected_sound)
 min_t_sound                      = float(flight_warning_Conf.min_t_sound)
@@ -220,9 +235,9 @@ def crosstrack(distance, azimuth, track):
 # przeciecie azymutu slonca/ksiezyca z torem lotu
 # credit: http://www.movable-type.co.uk/scripts/latlong.html
 #
-def transit_pred(obs2moon, plane_pos, track, velocity, elevation, moon_alt, moon_az):
+def transit_pred(obs2moon, plane_pos, track, velocity, elevation, obj_alt, obj_az):
 
-    if moon_alt < 0.1:
+    if obj_alt < 0.1:
         return 0
     lat1, lon1 = obs2moon
     lat2, lon2 = plane_pos
@@ -230,7 +245,7 @@ def transit_pred(obs2moon, plane_pos, track, velocity, elevation, moon_alt, moon
     lat2 = radians(lat2)
     lon1 = radians(lon1)
     lon2 = radians(lon2)
-    theta_13 = radians(float(moon_az))
+    theta_13 = radians(float(obj_az))
     theta_23 = radians(float(track))
     Dlat = lat1-lat2
     Dlon = lon1-lon2
@@ -273,7 +288,7 @@ def transit_pred(obs2moon, plane_pos, track, velocity, elevation, moon_alt, moon
         dst_h2x = 0.001
     ## tu test wysokosci na metrach nie ft    
     # if elevation < 2166:
-        # my_elevation = 0 ## taka sama wysokoĹ›Ä‡ punktu obserwacji n.p.m jak pas na EPPO
+        # my_elevation = 0 ## taka sama wysokoÄąâ€şĂ„â€ˇ punktu obserwacji n.p.m jak pas na EPPO
     # else:
         # my_elevation = my_elevation_const
     if not is_int_try(elevation):
@@ -293,19 +308,19 @@ def transit_pred(obs2moon, plane_pos, track, velocity, elevation, moon_alt, moon
         velocity = 900 # only used for transit countdown
     delta_time = (dst_p2x / velocity)*3600
 
-    moon_alt_B = 90.00 - moon_alt
-    ideal_dist = (sin(radians(moon_alt_B))*elevation) / sin(radians(moon_alt)) / 1000
-    ideal_lat = asin((sin(radians(my_lat)) * cos(ideal_dist/earth_R)) + (cos(radians(my_lat)) * sin(ideal_dist/earth_R) * cos(radians(moon_az))))
-    ideal_lon = radians(my_lon) + atan2((sin(radians(moon_az))*sin(ideal_dist/earth_R)*cos(radians(my_lat))), (cos(ideal_dist/earth_R)-((sin(radians(my_lat))) * sin(ideal_lat))))
+    obj_alt_B = 90.00 - obj_alt
+    ideal_dist = (sin(radians(obj_alt_B))*elevation) / sin(radians(obj_alt)) / 1000
+    ideal_lat = asin((sin(radians(my_lat)) * cos(ideal_dist/earth_R)) + (cos(radians(my_lat)) * sin(ideal_dist/earth_R) * cos(radians(obj_az))))
+    ideal_lon = radians(my_lon) + atan2((sin(radians(obj_az))*sin(ideal_dist/earth_R)*cos(radians(my_lat))), (cos(ideal_dist/earth_R)-((sin(radians(my_lat))) * sin(ideal_lat))))
 
     ideal_lat = degrees(ideal_lat)
     ideal_lon = degrees(ideal_lon)
     ideal_lon = (ideal_lon+540)%360-180
 
-    return  lat3, lon3, azimuth1, altitude1, dst_h2x, dst_p2x, delta_time, 0, moon_az, moon_alt
+    return  lat3, lon3, azimuth1, altitude1, dst_h2x, dst_p2x, delta_time, 0, obj_az, obj_alt
     ##        0        1        2        3            4        5        6           7    8        9
 
-'''
+
 def dist_col(distance):
     if (distance <= 300 and distance > 100):
         return PURPLE
@@ -344,7 +359,7 @@ def elev_col(elevation):
     else:
         return RESET    
 
-'''
+
 def dist_col_2(distance):
     if (distance <= 300 and distance > 100):
         return ' class="ptext"'
@@ -407,9 +422,10 @@ def gong():
     global gong_t
     aktual_gong_t = datetime.datetime.now()
     diff_gong_t = (aktual_gong_t - gong_t).total_seconds() 
-    if (diff_gong_t > min_t_sound):
-        gong_t = aktual_gong_t
-        print( '\a') ## TERMINAL GONG!
+    if int(terminal_beeps) == 1:
+        if (diff_gong_t > min_t_sound):
+            gong_t = aktual_gong_t
+            print( '\a') ## TERMINAL GONG!
 
 def is_float_try(str):
     try:
@@ -469,6 +485,52 @@ def get_metar_press():
         # returns 1013 from global var
         return pressure
 
+
+def pressure_corr(elevation):
+    global my_elevation
+    global my_elevation_const
+    global near_airport_elevation
+    #global pressure
+
+    if ignore_pressure == 1:
+        elevation=int(elevation)
+    else:
+        elevation=int(elevation)
+        pressure = int(get_metar_press())
+
+
+        my_elevation_local = my_elevation * 3.28084 # why? # -90 ## taka sama wysokosc punktu obserwacji n.p.m jak pas na EPPO
+        near_airport_elevation_local = near_airport_elevation * 3.28084
+
+        if elevation > 6500: # m or ft at this stage? 
+
+            # elev > 6500m altimeters calibrated to 1013hPa
+            elevation = elevation + ((1013 - pressure)*30) # now it's missing diff to my_elev!?!?
+            #my_elevation = my_elevation_const #  wtf why? # my_elev was somewhere set to airport elev
+
+        # elif, transition zone, but fok et
+        else:
+
+            # below 6500 altimeters calibrated to local airport pressure
+            # we need diff between elev of observation point and airport!
+
+            # todo
+            #near_airport_elevation
+            # probably this one is correct +/- diff between elev of observation point and airport
+            elevation = elevation - (my_elevation_local - near_airport_elevation_local)
+
+
+            #elevation - ((1013 - pressure)*30)) - my_elevation)
+            #elevation = elevation #- ((1013 - pressure)*30) - my_elevation)
+            #elevation = elevation - (((1013 - pressure)*30) - my_elevation) # adsb elev - ( pressure_corr - my_elev ) #30ft or m??
+
+            # pfff, not sure, testing atm # probably unwanted mix with > 6500ft :/
+            # elevation = (elevation + ((1013 - pressure)*30)) - my_elevation # adsb elev - ( pressure_corr - my_elev ) #30ft or m??
+
+
+    return elevation
+
+
 def clean_dict():
     for pentry in plane_dict:
         then2 = plane_dict[pentry][0]
@@ -499,7 +561,6 @@ def countdown_s(sekundy, countdown_licznik):
         sekundy = int(sekundy)
     #footer = ''
     #footer += '<script>audioElements.play();sleep(700).then(() => {;audioElements.play();})</script>'
-    
     #footer += '<script>audioElements.play();sleep(700).then(() => {;audioElement3.play();sleep(700).then(() => {;audioElementmin.play();  })  })</script>'
     #print(countdown_licznik, last_sekundy )
     if sekundy == "0":
@@ -512,102 +573,192 @@ def countdown_s(sekundy, countdown_licznik):
      if (last_sekundy == -1) or (last_sekundy > sekundy):
         #print('x')
         #if sekundy > 186:
-        #    footer = '<script>audioElements.play();sleep(700).then(() => {;'
-        #    footer += 'audioElement20.play(); sleep(700).then(() => {;audioElementmin.play();  }) })</script>'
+        #    footer = '''<script>var audioElementm = new Audio('sun.mp3');
+        #                        audioElementm.addEventListener('loadeddata', () => { let duration = audioElementm.duration; })
+        #                        var audioElement3 = new Audio('3.wav');
+        #                        audioElement3.addEventListener('loadeddata', () => { let duration = audioElement3.duration; })
+        #                        var audioElementmin = new Audio('Minutes.wav');
+        #                        audioElementmin.addEventListener('loadeddata', () => { let duration = audioElementmin.duration; });'''
+        #    footer += 'audioElementm.play(); sleep(700).then(() => {;'
+        #    footer += 'audioElement3.play(); sleep(700).then(() => {;audioElementmin.play();  }) })</script>'
         #    countdown_licznik += 1
         #    last_sekundy = sekundy
+
         if 179 <= sekundy <= 181:
-            footer = '<script>audioElements.play();sleep(700).then(() => {;'
+
+            footer = '''<script>var audioElementm = new Audio('sun.mp3');
+                                audioElementm.addEventListener('loadeddata', () => { let duration = audioElementm.duration; })
+                                var audioElement3 = new Audio('3.wav');
+                                audioElement3.addEventListener('loadeddata', () => { let duration = audioElement3.duration; })
+                                var audioElementmin = new Audio('Minutes.wav');
+                                audioElementmin.addEventListener('loadeddata', () => { let duration = audioElementmin.duration; });'''
+            footer += 'audioElementm.play(); sleep(700).then(() => {;'
             footer += 'audioElement3.play(); sleep(700).then(() => {;audioElementmin.play();  }) })</script>'
             countdown_licznik += 1
             last_sekundy = sekundy
         elif 117 <= sekundy <= 123:
-            footer = '<script>audioElements.play();sleep(700).then(() => {;'
+            footer = '''<script>var audioElementm = new Audio('sun.mp3');
+                                audioElementm.addEventListener('loadeddata', () => { let duration = audioElementm.duration; })
+                                var audioElement2 = new Audio('2.wav');
+                                audioElement2.addEventListener('loadeddata', () => { let duration = audioElement2.duration; })
+                                var audioElementmin = new Audio('Minutes.wav');
+                                audioElementmin.addEventListener('loadeddata', () => { let duration = audioElementmin.duration; });'''
+            footer += 'audioElementm.play();sleep(700).then(() => {;'
             footer += 'audioElement2.play();sleep(700).then(() => {;audioElementmin.play();  }) })</script>'
             countdown_licznik += 1
             last_sekundy = sekundy
         elif 58 <= sekundy <= 62:
-            footer = '<script>audioElements.play();sleep(700).then(() => {;'
+            footer = '''<script>var audioElementm = new Audio('sun.mp3');
+                                audioElementm.addEventListener('loadeddata', () => { let duration = audioElementm.duration; })
+                                var audioElement1 = new Audio('1.wav');
+                                audioElement1.addEventListener('loadeddata', () => { let duration = audioElement1.duration; })
+                                var audioElementmin = new Audio('Minutes.wav');
+                                audioElementmin.addEventListener('loadeddata', () => { let duration = audioElementmin.duration; });'''
+            footer += 'audioElementm.play();sleep(700).then(() => {;'
             footer += 'audioElement1.play();sleep(700).then(() => {;audioElementmin.play();  }) })</script>'
             countdown_licznik += 1
             last_sekundy = sekundy
         elif 48 <= sekundy <= 52:
-            footer = '<script>audioElements.play();sleep(700).then(() => {;'
+            footer = '''<script>var audioElements = new Audio('sun.mp3');
+                                audioElements.addEventListener('loadeddata', () => { let duration = audioElements.duration; })
+                                var audioElement50 = new Audio('50.wav');
+                                audioElement50.addEventListener('loadeddata', () => { let duration = audioElement50.duration; })'''
+            footer += 'audioElements.play();sleep(700).then(() => {;'
             footer += 'audioElement50.play();})</script>'
             countdown_licznik += 1
             last_sekundy = sekundy
         elif 38 <= sekundy <= 42:
-            footer = '<script>audioElements.play();sleep(700).then(() => {;'
+            footer = '''<script>var audioElements = new Audio('sun.mp3');
+                                audioElements.addEventListener('loadeddata', () => { let duration = audioElements.duration; })
+                                var audioElement40 = new Audio('40.wav');
+                                audioElement40.addEventListener('loadeddata', () => { let duration = audioElement40.duration; })'''
+            footer += 'audioElements.play();sleep(700).then(() => {;'
             footer += 'audioElement40.play();})</script>'
             countdown_licznik += 1
             last_sekundy = sekundy
         elif 28 <= sekundy <= 32:
-            footer = '<script>audioElements.play();sleep(700).then(() => {;'
+            footer = '''<script>var audioElements = new Audio('sun.mp3');
+                                audioElements.addEventListener('loadeddata', () => { let duration = audioElements.duration; })
+                                var audioElement30 = new Audio('30.wav');
+                                audioElement30.addEventListener('loadeddata', () => { let duration = audioElement30.duration; })'''
+            footer += 'audioElements.play();sleep(700).then(() => {;'
             footer += 'audioElement30.play();})</script>'
             countdown_licznik += 1
             last_sekundy = sekundy
         elif 18 <= sekundy <= 22:
-            footer = '<script>audioElements.play();sleep(700).then(() => {;'
+            footer = '''<script>var audioElements = new Audio('sun.mp3');
+                                audioElements.addEventListener('loadeddata', () => { let duration = audioElements.duration; })
+                                var audioElement20 = new Audio('20.wav');
+                                audioElement20.addEventListener('loadeddata', () => { let duration = audioElement20.duration; })'''
+            footer += 'audioElements.play();sleep(700).then(() => {;'
             footer += 'audioElement20.play();})</script>'
             countdown_licznik += 1
             last_sekundy = sekundy
         elif 14 <= sekundy <= 16:
-            footer = '<script>audioElements.play();sleep(700).then(() => {;'
+            footer = '''<script>var audioElements = new Audio('sun.mp3');
+                                audioElements.addEventListener('loadeddata', () => { let duration = audioElements.duration; })
+                                var audioElement15 = new Audio('15.wav');
+                                audioElement15.addEventListener('loadeddata', () => { let duration = audioElement15.duration; })'''
+            footer += 'audioElements.play();sleep(700).then(() => {;'
             footer += 'audioElement15.play();})</script>'
             countdown_licznik += 1
             last_sekundy = sekundy
         elif 10 <= sekundy <= 12:
-            footer = '<script>audioElements.play();sleep(700).then(() => {;'
+            footer = '''<script>var audioElements = new Audio('sun.mp3');
+                                audioElements.addEventListener('loadeddata', () => { let duration = audioElements.duration; })
+                                var audioElement10 = new Audio('10.wav');
+                                audioElement10.addEventListener('loadeddata', () => { let duration = audioElement10.duration; })'''
+            footer += 'audioElements.play();sleep(700).then(() => {;'
             footer += 'audioElement10.play();})</script>'
             countdown_licznik += 1
             last_sekundy = sekundy
         elif 0 < sekundy < 1:
-            footer = '<script>audioElements.play();sleep(700).then(() => {;'
+            footer = '''<script>var audioElements = new Audio('sun.mp3');
+                                audioElements.addEventListener('loadeddata', () => { let duration = audioElements.duration; })
+                                var audioElement0 = new Audio('0.wav');
+                                audioElement0.addEventListener('loadeddata', () => { let duration = audioElement0.duration; })'''
+            footer += 'audioElements.play();sleep(700).then(() => {;'
             footer += 'audioElement0.play();})</script>'
             countdown_licznik += 1
             last_sekundy = sekundy
         elif 1 <= sekundy < 2:
-            footer = '<script>audioElements.play();sleep(700).then(() => {;'
+            footer = '''<script>var audioElements = new Audio('sun.mp3');
+                                audioElements.addEventListener('loadeddata', () => { let duration = audioElements.duration; })
+                                var audioElement1 = new Audio('1.wav');
+                                audioElement1.addEventListener('loadeddata', () => { let duration = audioElement1.duration; })'''
+            footer += 'audioElements.play();sleep(700).then(() => {;'
             footer += 'audioElement1.play();})</script>'
             countdown_licznik += 1
             last_sekundy = sekundy
         elif 2 <= sekundy < 3:
-            footer = '<script>audioElements.play();sleep(700).then(() => {;'
+            footer = '''<script>var audioElements = new Audio('sun.mp3');
+                                audioElements.addEventListener('loadeddata', () => { let duration = audioElements.duration; })
+                                var audioElement2 = new Audio('2.wav');
+                                audioElement2.addEventListener('loadeddata', () => { let duration = audioElement2.duration; })'''
+            footer += 'audioElements.play();sleep(700).then(() => {;'
             footer += 'audioElement2.play();})</script>'
             countdown_licznik += 1
             last_sekundy = sekundy
         elif 3 <= sekundy < 4:
-            footer = '<script>audioElements.play();sleep(700).then(() => {;'
+            footer = '''<script>var audioElements = new Audio('sun.mp3');
+                                audioElements.addEventListener('loadeddata', () => { let duration = audioElements.duration; })
+                                var audioElement3 = new Audio('3.wav');
+                                audioElement3.addEventListener('loadeddata', () => { let duration = audioElement3.duration; })'''
+            footer += 'audioElements.play();sleep(700).then(() => {;'
             footer += 'audioElement3.play();})</script>'
             countdown_licznik += 1
             last_sekundy = sekundy
         elif 4 <= sekundy < 5:
-            footer = '<script>audioElements.play();sleep(700).then(() => {;'
+            footer = '''<script>var audioElements = new Audio('sun.mp3');
+                                audioElements.addEventListener('loadeddata', () => { let duration = audioElements.duration; })
+                                var audioElement4 = new Audio('4.wav');
+                                audioElement4.addEventListener('loadeddata', () => { let duration = audioElement4.duration; })'''
+            footer += 'audioElements.play();sleep(700).then(() => {;'
             footer += 'audioElement4.play();})</script>'
             countdown_licznik += 1
             last_sekundy = sekundy
         elif 5 <= sekundy < 6:
-            footer = '<script>audioElements.play();sleep(700).then(() => {;'
+            footer = '''<script>var audioElements = new Audio('sun.mp3');
+                                audioElements.addEventListener('loadeddata', () => { let duration = audioElements.duration; })
+                                var audioElement5 = new Audio('5.wav');
+                                audioElement5.addEventListener('loadeddata', () => { let duration = audioElement5.duration; })'''
+            footer += 'audioElements.play();sleep(700).then(() => {;'
             footer += 'audioElement5.play();})</script>'
             countdown_licznik += 1
             last_sekundy = sekundy
         elif 6 <= sekundy < 7:
-            footer = '<script>audioElements.play();sleep(700).then(() => {;'
+            footer = '''<script>var audioElements = new Audio('sun.mp3');
+                                audioElements.addEventListener('loadeddata', () => { let duration = audioElements.duration; })
+                                var audioElement6 = new Audio('6.wav');
+                                audioElement6.addEventListener('loadeddata', () => { let duration = audioElement6.duration; })'''
+            footer += 'audioElements.play();sleep(700).then(() => {;'
             footer += 'audioElement6.play();})</script>'
             countdown_licznik += 1
             last_sekundy = sekundy
         elif 7 <= sekundy < 8:
-            footer = '<script>audioElements.play();sleep(700).then(() => {;'
+            footer = '''<script>var audioElements = new Audio('sun.mp3');
+                                audioElements.addEventListener('loadeddata', () => { let duration = audioElements.duration; })
+                                var audioElement7 = new Audio('7.wav');
+                                audioElement7.addEventListener('loadeddata', () => { let duration = audioElement7.duration; })'''
+            footer += 'audioElements.play();sleep(700).then(() => {;'
             footer += 'audioElement7.play();})</script>'
             countdown_licznik += 1
             last_sekundy = sekundy
         elif 8 <= sekundy < 9:
-            footer = '<script>audioElements.play();sleep(700).then(() => {;'
+            footer = '''<script>var audioElements = new Audio('sun.mp3');
+                                audioElements.addEventListener('loadeddata', () => { let duration = audioElements.duration; })
+                                var audioElement8 = new Audio('8.wav');
+                                audioElement8.addEventListener('loadeddata', () => { let duration = audioElement8.duration; })'''
+            footer = 'audioElements.play();sleep(700).then(() => {;'
             footer += 'audioElement8.play();})</script>'
             countdown_licznik += 1
             last_sekundy = sekundy
         elif 9 <= sekundy < 10:
-            footer = '<script>audioElements.play();sleep(700).then(() => {;'
+            footer = '''<script>var audioElements = new Audio('sun.mp3');
+                                audioElements.addEventListener('loadeddata', () => { let duration = audioElements.duration; })
+                                var audioElement9 = new Audio('9.wav');
+                                audioElement9.addEventListener('loadeddata', () => { let duration = audioElement9.duration; })'''
+            footer = 'audioElements.play();sleep(700).then(() => {;'
             footer += 'audioElement9.play();})</script>'
             countdown_licznik += 1
             last_sekundy = sekundy
@@ -629,7 +780,7 @@ def countdown_m(sekundy, countdown_licznik):
     #footer += '<script>audioElements.play();sleep(700).then(() => {;audioElements.play();})</script>'
     
     #footer += '<script>audioElements.play();sleep(700).then(() => {;audioElement3.play();sleep(700).then(() => {;audioElementmin.play();  })  })</script>'
-    print(countdown_licznik, last_sekundy )
+    # print(countdown_licznik, last_sekundy )
     if sekundy == "0":
         #print("xx1")
         return countdown_licznik, footer
@@ -638,105 +789,244 @@ def countdown_m(sekundy, countdown_licznik):
         return countdown_licznik, footer
     if (countdown_licznik >= 0): 
      if (last_sekundy == -1) or (last_sekundy > sekundy):
-        print('x')
+        #print('x')
         #if sekundy > 186:
         #    footer = '<script>audioElementm.play();sleep(700).then(() => {;'
         #    footer += 'audioElement20.play(); sleep(700).then(() => {;audioElementmin.play();  }) })</script>'
         #    countdown_licznik += 1
-        #   last_sekundy = sekundy
+        #    last_sekundy = sekundy
+        '''
+                                var audioElement60 = new Audio('60.wav');
+                                var audioElement50 = new Audio('50.wav');
+                                var audioElement40 = new Audio('40.wav');
+                                var audioElement30 = new Audio('30.wav');
+                                var audioElement20 = new Audio('20.wav');
+                                var audioElement15 = new Audio('15.wav');
+                                var audioElement10 = new Audio('10.wav');
+                                var audioElement9 = new Audio('9.wav');
+                                var audioElement8 = new Audio('8.wav');
+                                var audioElement7 = new Audio('7.wav');
+                                var audioElement6 = new Audio('6.wav');
+                                var audioElement5 = new Audio('5.wav');
+                                var audioElement4 = new Audio('4.wav');
+                                var audioElement3 = new Audio('3.wav');
+                                var audioElement2 = new Audio('2.wav');
+                                var audioElement1 = new Audio('1.wav');
+                                var audioElement0 = new Audio('0.wav');
+                                var audioElements = new Audio('sun.mp3');
+                                var audioElementm = new Audio('moon.mp3');
+    
+                                audioElementm.addEventListener('loadeddata', () => { let duration = audioElementm.duration; })
+                                audioElement60.addEventListener('loadeddata', () => { let duration = audioElement60.duration; })
+                                audioElement50.addEventListener('loadeddata', () => { let duration = audioElement50.duration; })
+                                audioElement40.addEventListener('loadeddata', () => { let duration = audioElement40.duration; })
+                                audioElement30.addEventListener('loadeddata', () => { let duration = audioElement30.duration; })
+                                audioElement20.addEventListener('loadeddata', () => { let duration = audioElement20.duration; })
+                                audioElement15.addEventListener('loadeddata', () => { let duration = audioElement15.duration; })
+                                audioElement10.addEventListener('loadeddata', () => { let duration = audioElement10.duration; })
+                                audioElement9.addEventListener('loadeddata', () => { let duration = audioElement9.duration; })
+                                audioElement8.addEventListener('loadeddata', () => { let duration = audioElement8.duration; })
+                                audioElement7.addEventListener('loadeddata', () => { let duration = audioElement7.duration; })
+                                audioElement6.addEventListener('loadeddata', () => { let duration = audioElement6.duration; })
+                                audioElement5.addEventListener('loadeddata', () => { let duration = audioElement5.duration; })
+                                audioElement4.addEventListener('loadeddata', () => { let duration = audioElement4.duration; })
+                                audioElement3.addEventListener('loadeddata', () => { let duration = audioElement3.duration; })
+                                audioElement2.addEventListener('loadeddata', () => { let duration = audioElement2.duration; })
+                                audioElement1.addEventListener('loadeddata', () => { let duration = audioElement1.duration; })
+                                audioElement0.addEventListener('loadeddata', () => { let duration = audioElement0.duration; })
+            
+            footer = <script>var audioElements = new Audio('sun.mp3');
+                                audioElements.addEventListener('loadeddata', () => { let duration = audioElements.duration; })
+                                var audioElement = new Audio('.wav');
+                                audioElement.addEventListener('loadeddata', () => { let duration = audioElement.duration; })'''
+        
+        #if sekundy > 186:
+        #    footer = '''<script>var audioElementm = new Audio('sun.mp3');
+        #                        audioElementm.addEventListener('loadeddata', () => { let duration = audioElementm.duration; })
+        #                        var audioElement3 = new Audio('3.wav');
+        #                        audioElement3.addEventListener('loadeddata', () => { let duration = audioElement3.duration; })
+        #                        var audioElementmin = new Audio('Minutes.wav');
+        #                        audioElementmin.addEventListener('loadeddata', () => { let duration = audioElementmin.duration; });'''
+        #    footer += 'audioElementm.play(); sleep(700).then(() => {;'
+        #    footer += 'audioElement3.play(); sleep(700).then(() => {;audioElementmin.play();  }) })</script>'
+        #    countdown_licznik += 1
+        #    last_sekundy = sekundy
 
+        
         if 179 <= sekundy <= 181:
-            footer = '<script>audioElementm.play();sleep(700).then(() => {;'
+            footer = '''<script>var audioElementm = new Audio('sun.mp3');
+                                audioElementm.addEventListener('loadeddata', () => { let duration = audioElementm.duration; })
+                                var audioElement3 = new Audio('3.wav');
+                                audioElement3.addEventListener('loadeddata', () => { let duration = audioElement3.duration; })
+                                var audioElementmin = new Audio('Minutes.wav');
+                                audioElementmin.addEventListener('loadeddata', () => { let duration = audioElementmin.duration; });'''
+            footer += 'audioElementm.play(); sleep(700).then(() => {;'
             footer += 'audioElement3.play(); sleep(700).then(() => {;audioElementmin.play();  }) })</script>'
             countdown_licznik += 1
             last_sekundy = sekundy
         elif 117 <= sekundy <= 123:
-            footer = '<script>audioElementm.play();sleep(700).then(() => {;'
+            footer = '''<script>var audioElementm = new Audio('sun.mp3');
+                                audioElementm.addEventListener('loadeddata', () => { let duration = audioElementm.duration; })
+                                var audioElement2 = new Audio('2.wav');
+                                audioElement2.addEventListener('loadeddata', () => { let duration = audioElement2.duration; })
+                                var audioElementmin = new Audio('Minutes.wav');
+                                audioElementmin.addEventListener('loadeddata', () => { let duration = audioElementmin.duration; });'''
+            footer += 'audioElementm.play();sleep(700).then(() => {;'
             footer += 'audioElement2.play();sleep(700).then(() => {;audioElementmin.play();  }) })</script>'
             countdown_licznik += 1
             last_sekundy = sekundy
         elif 58 <= sekundy <= 62:
-            footer = '<script>audioElementm.play();sleep(700).then(() => {;'
+            footer = '''<script>var audioElementm = new Audio('sun.mp3');
+                                audioElementm.addEventListener('loadeddata', () => { let duration = audioElementm.duration; })
+                                var audioElement1 = new Audio('1.wav');
+                                audioElement1.addEventListener('loadeddata', () => { let duration = audioElement1.duration; })
+                                var audioElementmin = new Audio('Minutes.wav');
+                                audioElementmin.addEventListener('loadeddata', () => { let duration = audioElementmin.duration; });'''
+            footer += 'audioElementm.play();sleep(700).then(() => {;'
             footer += 'audioElement1.play();sleep(700).then(() => {;audioElementmin.play();  }) })</script>'
             countdown_licznik += 1
             last_sekundy = sekundy
         elif 48 <= sekundy <= 52:
-            footer = '<script>audioElementm.play();sleep(700).then(() => {;'
+            footer = '''<script>var audioElementm = new Audio('sun.mp3');
+                                audioElementm.addEventListener('loadeddata', () => { let duration = audioElementm.duration; })
+                                var audioElement50 = new Audio('50.wav');
+                                audioElement50.addEventListener('loadeddata', () => { let duration = audioElement50.duration; })'''
+            footer += 'audioElementm.play();sleep(700).then(() => {;'
             footer += 'audioElement50.play();})</script>'
             countdown_licznik += 1
             last_sekundy = sekundy
         elif 38 <= sekundy <= 42:
-            footer = '<script>audioElementm.play();sleep(700).then(() => {;'
+            footer = '''<script>var audioElementm = new Audio('sun.mp3');
+                                audioElementm.addEventListener('loadeddata', () => { let duration = audioElementm.duration; })
+                                var audioElement40 = new Audio('40.wav');
+                                audioElement40.addEventListener('loadeddata', () => { let duration = audioElement40.duration; })'''
+            footer += 'audioElementm.play();sleep(700).then(() => {;'
             footer += 'audioElement40.play();})</script>'
             countdown_licznik += 1
             last_sekundy = sekundy
         elif 28 <= sekundy <= 32:
-            footer = '<script>audioElementm.play();sleep(700).then(() => {;'
+            footer = '''<script>var audioElementm = new Audio('sun.mp3');
+                                audioElementm.addEventListener('loadeddata', () => { let duration = audioElementm.duration; })
+                                var audioElement30 = new Audio('30.wav');
+                                audioElement30.addEventListener('loadeddata', () => { let duration = audioElement30.duration; })'''
+            footer += 'audioElementm.play();sleep(700).then(() => {;'
             footer += 'audioElement30.play();})</script>'
             countdown_licznik += 1
             last_sekundy = sekundy
         elif 18 <= sekundy <= 22:
-            footer = '<script>audioElementm.play();sleep(700).then(() => {;'
+            footer = '''<script>var audioElementm = new Audio('sun.mp3');
+                                audioElementm.addEventListener('loadeddata', () => { let duration = audioElementm.duration; })
+                                var audioElement20 = new Audio('20.wav');
+                                audioElement20.addEventListener('loadeddata', () => { let duration = audioElement20.duration; })'''
+            footer += 'audioElementm.play();sleep(700).then(() => {;'
             footer += 'audioElement20.play();})</script>'
             countdown_licznik += 1
             last_sekundy = sekundy
         elif 14 <= sekundy <= 16:
-            footer = '<script>audioElementm.play();sleep(700).then(() => {;'
+            footer = '''<script>var audioElementm = new Audio('sun.mp3');
+                                audioElementm.addEventListener('loadeddata', () => { let duration = audioElementm.duration; })
+                                var audioElement15 = new Audio('15.wav');
+                                audioElement15.addEventListener('loadeddata', () => { let duration = audioElement15.duration; })'''
+            footer += 'audioElementm.play();sleep(700).then(() => {;'
             footer += 'audioElement15.play();})</script>'
             countdown_licznik += 1
             last_sekundy = sekundy
         elif 10 <= sekundy <= 12:
-            footer = '<script>audioElementm.play();sleep(700).then(() => {;'
+            footer = '''<script>var audioElementm = new Audio('sun.mp3');
+                                audioElementm.addEventListener('loadeddata', () => { let duration = audioElementm.duration; })
+                                var audioElement10 = new Audio('10.wav');
+                                audioElement10.addEventListener('loadeddata', () => { let duration = audioElement10.duration; })'''
+            footer += 'audioElementm.play();sleep(700).then(() => {;'
             footer += 'audioElement10.play();})</script>'
             countdown_licznik += 1
             last_sekundy = sekundy
         elif 0 < sekundy < 1:
-            footer = '<script>audioElementm.play();sleep(700).then(() => {;'
+            footer = '''<script>var audioElementm = new Audio('sun.mp3');
+                                audioElementm.addEventListener('loadeddata', () => { let duration = audioElementm.duration; })
+                                var audioElement0 = new Audio('0.wav');
+                                audioElement0.addEventListener('loadeddata', () => { let duration = audioElement0.duration; })'''
+            footer += 'audioElementm.play();sleep(700).then(() => {;'
             footer += 'audioElement0.play();})</script>'
             countdown_licznik += 1
             last_sekundy = sekundy
         elif 1 <= sekundy < 2:
-            footer = '<script>audioElementm.play();sleep(700).then(() => {;'
+            footer = '''<script>var audioElementm = new Audio('sun.mp3');
+                                audioElementm.addEventListener('loadeddata', () => { let duration = audioElementm.duration; })
+                                var audioElement1 = new Audio('1.wav');
+                                audioElement1.addEventListener('loadeddata', () => { let duration = audioElement1.duration; })'''
+            footer += 'audioElementm.play();sleep(700).then(() => {;'
             footer += 'audioElement1.play();})</script>'
             countdown_licznik += 1
             last_sekundy = sekundy
         elif 2 <= sekundy < 3:
-            footer = '<script>audioElementm.play();sleep(700).then(() => {;'
+            footer = '''<script>var audioElementm = new Audio('sun.mp3');
+                                audioElementm.addEventListener('loadeddata', () => { let duration = audioElementm.duration; })
+                                var audioElement2 = new Audio('2.wav');
+                                audioElement2.addEventListener('loadeddata', () => { let duration = audioElement2.duration; })'''
+            footer += 'audioElementm.play();sleep(700).then(() => {;'
             footer += 'audioElement2.play();})</script>'
             countdown_licznik += 1
             last_sekundy = sekundy
         elif 3 <= sekundy < 4:
-            footer = '<script>audioElementm.play();sleep(700).then(() => {;'
+            footer = '''<script>var audioElementm = new Audio('sun.mp3');
+                                audioElementm.addEventListener('loadeddata', () => { let duration = audioElementm.duration; })
+                                var audioElement3 = new Audio('3.wav');
+                                audioElement3.addEventListener('loadeddata', () => { let duration = audioElement3.duration; })'''
+            footer += 'audioElementm.play();sleep(700).then(() => {;'
             footer += 'audioElement3.play();})</script>'
             countdown_licznik += 1
             last_sekundy = sekundy
         elif 4 <= sekundy < 5:
-            footer = '<script>audioElementm.play();sleep(700).then(() => {;'
+            footer = '''<script>var audioElementm = new Audio('sun.mp3');
+                                audioElementm.addEventListener('loadeddata', () => { let duration = audioElementm.duration; })
+                                var audioElement4 = new Audio('4.wav');
+                                audioElement4.addEventListener('loadeddata', () => { let duration = audioElement4.duration; })'''
+            footer += 'audioElementm.play();sleep(700).then(() => {;'
             footer += 'audioElement4.play();})</script>'
             countdown_licznik += 1
             last_sekundy = sekundy
         elif 5 <= sekundy < 6:
-            footer = '<script>audioElementm.play();sleep(700).then(() => {;'
+            footer = '''<script>var audioElementm = new Audio('sun.mp3');
+                                audioElementm.addEventListener('loadeddata', () => { let duration = audioElementm.duration; })
+                                var audioElement5 = new Audio('5.wav');
+                                audioElement5.addEventListener('loadeddata', () => { let duration = audioElement5.duration; })'''
+            footer += 'audioElementm.play();sleep(700).then(() => {;'
             footer += 'audioElement5.play();})</script>'
             countdown_licznik += 1
             last_sekundy = sekundy
         elif 6 <= sekundy < 7:
-            footer = '<script>audioElementm.play();sleep(700).then(() => {;'
+            footer = '''<script>var audioElementm = new Audio('sun.mp3');
+                                audioElementm.addEventListener('loadeddata', () => { let duration = audioElementm.duration; })
+                                var audioElement6 = new Audio('6.wav');
+                                audioElement6.addEventListener('loadeddata', () => { let duration = audioElement6.duration; })'''
+            footer += 'audioElementm.play();sleep(700).then(() => {;'
             footer += 'audioElement6.play();})</script>'
             countdown_licznik += 1
             last_sekundy = sekundy
         elif 7 <= sekundy < 8:
-            footer = '<script>audioElementm.play();sleep(700).then(() => {;'
+            footer = '''<script>var audioElementm = new Audio('sun.mp3');
+                                audioElementm.addEventListener('loadeddata', () => { let duration = audioElementm.duration; })
+                                var audioElement7 = new Audio('7.wav');
+                                audioElement7.addEventListener('loadeddata', () => { let duration = audioElement7.duration; })'''
+            footer += 'audioElementm.play();sleep(700).then(() => {;'
             footer += 'audioElement7.play();})</script>'
             countdown_licznik += 1
             last_sekundy = sekundy
         elif 8 <= sekundy < 9:
-            footer = '<script>audioElementm.play();sleep(700).then(() => {;'
+            footer = '''<script>var audioElementm = new Audio('sun.mp3');
+                                audioElementm.addEventListener('loadeddata', () => { let duration = audioElementm.duration; })
+                                var audioElement8 = new Audio('8.wav');
+                                audioElement8.addEventListener('loadeddata', () => { let duration = audioElement8.duration; })'''
+            footer = 'audioElementm.play();sleep(700).then(() => {;'
             footer += 'audioElement8.play();})</script>'
             countdown_licznik += 1
             last_sekundy = sekundy
         elif 9 <= sekundy < 10:
-            footer = '<script>audioElementm.play();sleep(700).then(() => {;'
+            footer = '''<script>var audioElementm = new Audio('sun.mp3');
+                                audioElementm.addEventListener('loadeddata', () => { let duration = audioElementm.duration; })
+                                var audioElement9 = new Audio('9.wav');
+                                audioElement9.addEventListener('loadeddata', () => { let duration = audioElement9.duration; })'''
+            footer = 'audioElementm.play();sleep(700).then(() => {;'
             footer += 'audioElement9.play();})</script>'
             countdown_licznik += 1
             last_sekundy = sekundy
@@ -745,9 +1035,554 @@ def countdown_m(sekundy, countdown_licznik):
 
 
 
+##########################################################################################################################################################
+# Tabela TERMINAL
+##########################################################################################################################################################
 
 
-def tabela():
+
+def tabela_terminal():
+    #global footer
+    global last_t_terminal
+    #global last_sekundy
+    if time_corr_ephem == "1":
+        #print("aaa")
+        d_t1 = datetime.datetime.utcnow() + datetime.timedelta(minutes=int(minutes_add_ephem))
+        gatech.date = ephem.Date(d_t1)
+    else:
+        gatech.date = ephem.now()
+    
+    # vm for right table slot, vs for left table slot 
+    vs = ephem.Moon(gatech)
+    vm = ephem.Sun(gatech)
+    
+    # can be used via star name like this: 
+    # vs = ephem.star('Polaris')
+    
+    # or via planet name like this:
+    # vs = ephem.Mars(gatech)
+    # vm = ephem.Jupiter(gatech)
+    
+    
+    vm.compute(gatech)
+    vs.compute(gatech)
+    obj_A_alt, obj_A_az= round(math.degrees(vm.alt), 1), round(math.degrees(vm.az), 1)
+    obj_B_alt, obj_B_az= round(math.degrees(vs.alt), 1), round(math.degrees(vs.az), 1)
+    
+    diff_t = (aktual_t - last_t_terminal).total_seconds()
+    ## Update freq 1=1s, 0=realtime 
+    if (diff_t > 1):
+        last_t_terminal = aktual_t
+
+
+        print('\033c'+ " Flight info -----------|-------|Pred. closest   |-- Current Az/Alt ---|--- Transits: "+ str(vs.name) +" " +str(obj_B_az) +" "+ str(obj_B_alt) +'     &  '+ str(vm.name)+" "+ str(obj_A_az)+" "+ str(obj_A_alt)+ '')
+        print( '{:9} {:>6} {:>6} {} {:>5} {} {:>6} {:>7} {} {:>5} {:>6} {:>5} {} {:>7} {:>7} {:>7} {:>8} {} {:>7} {:>7} {:>7} {:>7} {} {:>5}'.format(\
+        ' icao or', ' (m)', '(d)', '|', '(km)', '|', '(km)', '(d)', '|', '(d)', '(d)', '(l)', ' |', '(d)', '(km)', '(km)', '   (s)', '|', '(d)', '(km)', '(km)', '   (s)', ' |', '(s)'))
+        print( '{:9} {:>6} {:>6} {} {:>5} {} {:>6} {:>7} {} {:>5} {:>6} {:>5} {} {:>7} {:>7} {:>7} {:>8} {} {:>7} {:>7} {:>7} {:>7} {} {:>5}'.format(\
+        ' flight', 'elev', 'trck', '|', 'dist', '|', '[warn]', '[Alt]', '|', 'Alt', 'Azim', 'Azim', ' |', 'Sep', 'p2x', 'h2x', 'time2X', '|', 'Sep', 'p2x', 'h2x', 'time2X', ' |', 'age / latlon'))
+        print( "------------------------|-------|----------------|---------------------|----------------------------------|----------------------------------|-------|-------")
+
+        ## Subloop through all entries
+        #with open(out_path_html,'w') as tsttxt:
+        #    tsttxt.write(str(header))
+        #footer = ''
+        #countdown_licznik = 0
+        #last_sekundy = -1
+        #with open(out_path,'w') as tsttxtzap:
+        #    tsttxtzap.write('')
+
+        for pentry in plane_dict:
+            #print( plane_dict[pentry])
+            #print('8', plane_dict[pentry][8],'9',plane_dict[pentry][9],'12',plane_dict[pentry][12],plane_dict[pentry][5],plane_dict[pentry][10] )
+            #zapis2 = ''
+            #with open(out_path,'a') as tsttxt:
+            if not (plane_dict[pentry][5] == '') and (plane_dict[pentry][5] <= display_limit):
+                    if plane_dict[pentry][17] != "":
+                        then = plane_dict[pentry][17]
+                        now = datetime.datetime.now()
+                        diff_seconds = (now - then).total_seconds()
+                    else:
+                        diff_seconds = 999
+                        
+                    then1 = plane_dict[pentry][0]
+                    now1 = datetime.datetime.now()
+                    diff_minutes = (now1 - then1).total_seconds() / 60.0
+
+                    wuersz = ''
+                    #zapis2 = ''
+
+                    
+
+                    # 1st section
+                    if plane_dict[pentry][1] != "":
+                        wuersz += '{} {:7} {}'.format(YELLOW, str(plane_dict[pentry][1]), RESET)                                                 ##flight
+                        #zapis2 +=  '<tr><td class="ytext">'+str(plane_dict[pentry][1])+'</td>'                                                 ##flight
+                        
+                    else:
+                        wuersz += '{} {:7} {}'.format(RESET, str(pentry), RESET)                            ##flight
+                        #zapis2 +=  '<tr><td>'+str(pentry)+'</td>'                                                 ##flight
+                    
+                    if is_float_try(plane_dict[pentry][4]):
+                        elevation=int(plane_dict[pentry][4])
+                    else:
+                        elevation=9999
+
+                    wuersz += '{} {:>6} {}'.format(elev_col(elevation), str(elevation),RESET)     ##elev
+                    #zapis2 += '<td '+str(elev_col_2(elevation))+'>'+str(elevation)+'</td>'
+
+                    wuersz += '{:>5}'.format(str(plane_dict[pentry][11]))                                                ## trck
+                    #zapis2 += '<td>'+str(plane_dict[pentry][11])+'</td>'
+
+                    wuersz += '  |'
+                    wuersz += '{} {:>5} {}'.format(dist_col(plane_dict[pentry][5]), str(plane_dict[pentry][5]),RESET)    ## dist
+                    #zapis2 += '<td '+dist_col_2(plane_dict[pentry][5])+'>'+str(plane_dict[pentry][5])+'</td>'
+
+                    wuersz += '|'
+
+
+                    # Predicted closest altitude in degrees
+                    if is_float_try(plane_dict[pentry][13]):
+                        if plane_dict[pentry][13] == 0:
+                            # my_elevation again :/
+                            #altitudeX = round(degrees(atan((elevation - my_elevation)/(float(0.01)*1000))) ,1)
+                            altitudeX = round(degrees(atan((elevation)/(float(0.01)*1000))) ,1)
+                        else:
+                            # my_elevation again :/
+                            #altitudeX = round(degrees(atan((elevation - my_elevation)/(float(plane_dict[pentry][13])*1000))) ,1)
+                            altitudeX = round(degrees(atan((elevation)/(float(plane_dict[pentry][13])*1000))) ,1)
+                    else:
+                        altitudeX = '0'
+
+                    # Predicted closest dissance in km
+                    if (plane_dict[pentry][12] == 'WARNING'):
+                        if (plane_dict[pentry][9] == "RECEDING" or plane_dict[pentry][8] == "LEAVING"):
+                            wuersz += '{}{}{:>5}{}{}'.format(str('['),RED, str( plane_dict[pentry][13]),RESET, str(']')) 
+                            #zapis2 += '<td class="rtext">['+str(plane_dict[pentry][13])+']</td>'
+
+                            wuersz += '{}{}{:>5}{}{}'.format(str(' ['), str(alt_col(plane_dict[pentry][7])), str(altitudeX),RESET, str(']'))    # kolorowanie dla aktualnej alt
+                            #zapis2 += '<td '+str(alt_col_2(plane_dict[pentry][7]))+'>['+str(altitudeX)+']</td>'
+
+                        elif (str(plane_dict[pentry][9]) == "APPROACHING"):
+                            wuersz += '{}{}{:>5}{}{}'.format(str('['),REDALERT, str( plane_dict[pentry][13]),RESET, str(']'))
+                            #zapis2 += '<td class="rrtext">['+str(plane_dict[pentry][13])+']</td>'
+
+                            wuersz += '{}{}{:>5}{}{}'.format(str(' ['), str(alt_col(float(altitudeX))), str(altitudeX),RESET, str(']'))    # kolorowanie dla przewidzianej alt
+                            #zapis2 += '<td '+str(alt_col_2(float(altitudeX)))+'>['+str(altitudeX)+']</td>'
+
+                        else:
+                            wuersz += '{}{}{:>5}{}{}'.format(str('['),RESET, str( plane_dict[pentry][13]),RESET, str(']'))
+                            #zapis2 += '<td>['+str(plane_dict[pentry][13])+'</td>'
+
+                            wuersz += '{}{}{:>5}{}{}'.format(str(' ['), str(alt_col(float(altitudeX))), str(altitudeX),RESET, str(']'))    # kolorowanie dla przewidzianej alt
+                            #zapis2 += '<td '+str(alt_col_2(float(altitudeX)))+'>['+str(altitudeX)+']</td>'
+
+                    else:
+                        if (plane_dict[pentry][9] == "RECEDING" or plane_dict[pentry][8] == "LEAVING"):
+                            wuersz += '{}{}{:>5}{}{}'.format(str('['),PURPLEDARK, str( plane_dict[pentry][13]),RESET, str(']'))
+                            #zapis2 += '<td class="dptext">['+str(plane_dict[pentry][13])+']</td>'
+
+                            wuersz += '{}{}{:>5}{}{}'.format(str(' ['), str(alt_col(plane_dict[pentry][7])), str(altitudeX),RESET, str(']'))    # kolorowanie dla aktualnej alt
+                            #zapis2 += '<td '+str(alt_col_2(plane_dict[pentry][7]))+'>['+str(altitudeX)+']</td>'
+
+                        elif (str(plane_dict[pentry][9]) == "APPROACHING"):
+                            wuersz += '{}{}{:>5}{}{}'.format(str('['),PURPLE, str( plane_dict[pentry][13]),RESET, str(']')) 
+                            #zapis2 += '<td class="ptext">['+str(plane_dict[pentry][13])+']</td>'
+
+                            wuersz += '{}{}{:>5}{}{}'.format(str(' ['), str(alt_col(float(altitudeX))), str(altitudeX),RESET, str(']'))    # kolorowanie dla przewidzianej altt
+                            #zapis2 += '<td '+str(alt_col_2(float(altitudeX)))+'>['+str(altitudeX)+']</td>'
+
+                        else:
+                            wuersz += '{}{}{:>5}{}{}'.format(str('['),RESET, str( plane_dict[pentry][13]),RESET, str(']'))
+                            #zapis2 += '<td>['+str(plane_dict[pentry][13])+']</td>'
+
+                            wuersz += '{}{}{:>5}{}{}'.format(str(' ['), str(alt_col(float(altitudeX))), str(altitudeX),RESET, str(']'))    # kolorowanie dla przewidzianej alt
+                            #zapis2 += '<td '+str(alt_col_2(float(altitudeX)))+'>['+str(altitudeX)+']</td>'
+
+
+                    wuersz += ' |'
+
+
+
+                    # Current altitude in degrees
+                    wuersz += '{} {:>5} {}'.format(alt_col(plane_dict[pentry][7]), str(plane_dict[pentry][7]),RESET)    ## Alt
+                    #zapis2 += '<td '+str(alt_col_2(plane_dict[pentry][7]))+'>'+str(plane_dict[pentry][7])+'</td>'
+
+
+                    # x/!/o latest msg age in pictograms :S (msg type 3 with position ())
+                    if diff_seconds >= 999:
+                        wuersz += '{}'.format(RED+str("x") +RESET)    
+                        #zapis2 += '<td class="rtext">'+str("x")+'</td>'
+                    elif diff_seconds > 30:
+                        wuersz += '{}'.format(RED+str("!") +RESET)    
+                        #zapis2 += '<td class="rtext">'+str("!")+'</td>'
+                    elif diff_seconds > 15:
+                        wuersz += '{}'.format(YELLOW+ str("!")+ RESET)    
+                        #zapis2 += '<td class="ytext">'+str("!")+'</td>'
+                    elif diff_seconds > 10:
+                        wuersz += '{}'.format(GREENFG+ str("!")+ RESET)    
+                        #zapis2 += '<td class="gtext">'+str("!")+'</td>'
+                    else:
+                        wuersz += '{}'.format(GREENFG+str("o") +RESET)    
+                        #zapis2 += '<td class="gtext">'+str("o")+'</td>'
+                    
+                    wuersz += '{:>6}'.format(str(plane_dict[pentry][6]))                                                ## Az    
+                    #zapis2 += '<td>'+str(plane_dict[pentry][6])+'</td>'
+                    
+                    wuersz += '{:>6}'.format(str(wind_deg_to_str1(plane_dict[pentry][6])))                                ## news
+                    #zapis2 += '<td>'+str(wind_deg_to_str1(plane_dict[pentry][6]))+'</td>'
+
+                    
+
+                    wuersz += ' |'
+
+
+                    ##thenx = plane_dict[pentry][0]
+                    #thenx = plane_dict[pentry][17]
+                    #nowx = datetime.datetime.now()
+                    #diff_secx = (nowx - thenx).total_seconds()
+
+                    if is_float_try(plane_dict[pentry][19]) and is_float_try(plane_dict[pentry][18]):
+                        separation_deg2 = round(float(plane_dict[pentry][19]-plane_dict[pentry][18]),1)
+                    else:
+                        separation_deg2 = 90.0
+
+                    if (-transit_separation_GREENALERT_FG < separation_deg2 < transit_separation_GREENALERT_FG):
+                        wuersz += '{} {:>6} {}'.format(GREENALERT, str(round((plane_dict[pentry][19]-plane_dict[pentry][18]),1)),RESET) ## SEPARACJA
+                        #zapis2 += '<td class="ggtext">'+str(round((plane_dict[pentry][19]-plane_dict[pentry][18]),1))+'</td>'
+
+                        wuersz += '{:>8}'.format(str(plane_dict[pentry][21]))  ## DISTANCE: AIRPLANE POS TO AIRPLANE PATH CROSS  
+                        #zapis2 += '<td class="ggtext">'+str(plane_dict[pentry][21])+'</td>'
+
+                        wuersz += '{:>7}'.format(str(round(plane_dict[pentry][20],1))) ## DISTANCE MY_POS TO CROSS POINT
+                        #zapis2 += '<td class="ggtext">'+str(round(plane_dict[pentry][20],1))+'</td>'
+
+                        wuersz += '{:>10}'.format(str(plane_dict[pentry][22]))            ## delta_tim    ## TIME UNTIL PLANE ARRIVE AT CROS
+                        #zapis2 += '<td class="ggtext">'+str(plane_dict[pentry][22])+'</td>'
+                        
+                        #countdown_licznik, footer = countdown_m(plane_dict[pentry][22], countdown_licznik)
+                        
+                    elif (-transit_separation_REDALERT_FG < separation_deg2 < transit_separation_REDALERT_FG):
+                        wuersz += '{} {:>6} {}'.format(REDALERT, str(round((plane_dict[pentry][19]-plane_dict[pentry][18]),1)),RESET) ## SEPARACJA
+                        #zapis2 += '<td class="rrtext">'+str(round((plane_dict[pentry][19]-plane_dict[pentry][18]),1))+'</td>'
+
+                        wuersz += '{:>8}'.format(str(plane_dict[pentry][21]))  ## DISTANCE: AIRPLANE POS TO AIRPLANE PATH CROSS  
+                        #zapis2 += '<td class="rrtext">'+str(plane_dict[pentry][21])+'</td>'
+
+                        wuersz += '{:>7}'.format(str(round(plane_dict[pentry][20],1))) ## DISTANCE MY_POS TO CROSS POINT
+                        #zapis2 += '<td class="rrtext">'+str(round(plane_dict[pentry][20],1))+'</td>'
+
+                        wuersz += '{:>10}'.format(str(plane_dict[pentry][22]))            ## delta_tim    ## TIME UNTIL PLANE ARRIVE AT CROSS POINT
+                        #zapis2 += '<td class="rrtext">'+str(plane_dict[pentry][22])+'</td>'
+
+                        #countdown_licznik, footer = countdown_m(plane_dict[pentry][22], countdown_licznik)
+
+
+                    elif (-transit_separation_notignored < separation_deg2 < transit_separation_notignored):
+                        wuersz += '{} {:>6} {}'.format(RED, str(round((plane_dict[pentry][19]-plane_dict[pentry][18]),1)),RESET) ## SEPARACJA
+                        #zapis2 += '<td>'+str(round((plane_dict[pentry][19]-plane_dict[pentry][18]),1))+'</td>'
+
+                        wuersz += '{:>8}'.format(str(plane_dict[pentry][21]))  ## DISTANCE: AIRPLANE POS TO AIRPLANE PATH CROSS  
+                        #zapis2 += '<td>'+str(plane_dict[pentry][21])+'</td>'
+
+                        wuersz += '{:>7}'.format(str(round(plane_dict[pentry][20],1))) ## DISTANCE MY_POS TO CROSS POINT
+                        #zapis2 += '<td>'+str(round(plane_dict[pentry][20],1))+'</td>'
+
+                        wuersz += '{:>10}'.format(str(plane_dict[pentry][22]))            ## delta_tim    ## TIME UNTIL PLANE ARRIVE AT CROSS POINT    
+                        #zapis2 += '<td>'+str(plane_dict[pentry][22])+'</td>'
+
+                        #countdown_licznik, footer = countdown_m(plane_dict[pentry][22], countdown_licznik)
+
+                    else:
+                        wuersz += '{:>8}'.format(str("---"))  ## SEPARACJA
+                        #zapis2 += '<td> ---- </td>'
+
+                        wuersz += '{:>8}'.format(str("---"))  ## DISTANCE: AIRPLANE POS TO AIRPLANE PATH CROSS   
+                        #zapis2 += '<td> ---- </td>'
+
+                        wuersz += '{:>7}'.format(str("---")) ## DISTANCE MY_POS TO CROSS POINT
+                        #zapis2 += '<td> ---- </td>'
+
+                        wuersz += '{:>10}'.format(str("---"))            ## delta_tim    ## TIME UNTIL PLANE ARRIVE AT CROSS POINT                        
+                        #zapis2 += '<td> ---- </td>'
+
+                        #countdown_licznik, footer = countdown_s(plane_dict[pentry][22], countdown_licznik)
+
+                    ###tu koniec
+
+                    wuersz += ' |'
+                    if is_float_try(plane_dict[pentry][24]) and is_float_try(plane_dict[pentry][23]):
+                        separation_deg = round(float(plane_dict[pentry][24]-plane_dict[pentry][23]),1)
+                    else:
+                        separation_deg = 90.0
+
+                    if (-transit_separation_GREENALERT_FG < separation_deg < transit_separation_GREENALERT_FG):
+                        wuersz += '{} {:>6} {}'.format(GREENALERT, str(round((plane_dict[pentry][24]-plane_dict[pentry][23]),1)),RESET) ## SEPARACJA
+                        #zapis2 += '<td class="ggtext">'+str(round((plane_dict[pentry][24]-plane_dict[pentry][23]),1))+'</td>'
+
+                        wuersz += '{:>8}'.format(str(plane_dict[pentry][27]))  ## DISTANCE: AIRPLANE POS TO AIRPLANE PATH CROSS  
+                        #zapis2 += '<td class="ggtext">+'+str(plane_dict[pentry][27])+'</td>'
+
+                        wuersz += '{:>7}'.format(str(round(plane_dict[pentry][25],1))) ## DISTANCE MY_POS TO CROSS POINT
+                        #zapis2 += '<td class="ggtext">+'+str(round(plane_dict[pentry][25],1))+'</td>'
+
+                        wuersz += '{:>10}'.format(str(plane_dict[pentry][26]))            ## delta_tim    ## TIME UNTIL PLANE ARRIVE AT CROS
+                        #zapis2 += '<td class="ggtext">+'+str(plane_dict[pentry][26])+'</td>'
+
+                        #countdown_licznik, footer = countdown_s(plane_dict[pentry][26], countdown_licznik)
+
+                    elif (-transit_separation_REDALERT_FG < separation_deg < transit_separation_REDALERT_FG):
+                        wuersz += '{} {:>6} {}'.format(REDALERT, str(round((plane_dict[pentry][24]-plane_dict[pentry][23]),1)),RESET) ## SEPARACJA
+                        #zapis2 += '<td class="rrtext">'+str(round((plane_dict[pentry][24]-plane_dict[pentry][23]),1))+'</td>'
+
+                        wuersz += '{:>8}'.format(str(plane_dict[pentry][27]))  ## DISTANCE: AIRPLANE POS TO AIRPLANE PATH CROSS  
+                        #zapis2 += '<td class="rrtext">'+str(plane_dict[pentry][27])+'</td>'
+
+                        wuersz += '{:>7}'.format(str(round(plane_dict[pentry][25],1))) ## DISTANCE MY_POS TO CROSS POINT
+                        #zapis2 += '<td class="rrtext">'+str(round(plane_dict[pentry][25],1))+'</td>'
+
+                        wuersz += '{:>10}'.format(str(plane_dict[pentry][26]))            ## delta_tim    ## TIME UNTIL PLANE ARRIVE AT CROSS POINT
+                        #zapis2 += '<td class="rrtext">'+str(plane_dict[pentry][26])+'</td>'
+
+                        #countdown_licznik, footer = countdown_s(plane_dict[pentry][26], countdown_licznik)
+
+                    elif (-transit_separation_notignored < separation_deg < transit_separation_notignored):
+                        wuersz += '{} {:>6} {}'.format(RED, str(round((plane_dict[pentry][24]-plane_dict[pentry][23]),1)),RESET) ## SEPARACJA
+                        #zapis2 += '<td>'+str(round((plane_dict[pentry][24]-plane_dict[pentry][23]),1))+'</td>'
+
+                        wuersz += '{:>8}'.format(str(plane_dict[pentry][27]))  ## DISTANCE: AIRPLANE POS TO AIRPLANE PATH CROSS  
+                        #zapis2 += '<td>'+str(plane_dict[pentry][27])+'</td>'
+
+                        wuersz += '{:>7}'.format(str(round(plane_dict[pentry][25],1))) ## DISTANCE MY_POS TO CROSS POINT
+                        #zapis2 += '<td>'+str(round(plane_dict[pentry][25],1))+'</td>'
+
+                        wuersz += '{:>10}'.format(str(plane_dict[pentry][26]))            ## delta_tim    ## TIME UNTIL PLANE ARRIVE AT CROSS POINT    
+                        #zapis2 += '<td>'+str(plane_dict[pentry][26])+'</td>'
+
+                        #countdown_licznik, footer = countdown_s(plane_dict[pentry][26], countdown_licznik)
+
+                    else:
+                        wuersz += '{:>8}'.format(str("---"))  ## SEPARACJA
+                        #zapis2 += '<td> ---- </td>'
+
+                        wuersz += '{:>8}'.format(str("---"))  ## DISTANCE: AIRPLANE POS TO AIRPLANE PATH CROSS   
+                        #zapis2 += '<td> ---- </td>'
+
+                        wuersz += '{:>7}'.format(str("---")) ## DISTANCE MY_POS TO CROSS POINT
+                        #zapis2 += '<td> ---- </td>'
+
+                        wuersz += '{:>10}'.format(str("---"))            ## delta_tim    ## TIME UNTIL PLANE ARRIVE AT CROSS POINT
+                        #zapis2 += '<td> ---- </td>'
+
+                    ##tu koniec2    
+                    wuersz += ' |'
+
+                    thenx = plane_dict[pentry][0]
+                    nowx = datetime.datetime.now()
+                    diff_secx = (nowx - thenx).total_seconds()
+
+                    wuersz += '{:>6}'.format(str(round(diff_secx, 1)))
+                    #zapis2 += '<td>'+str(round(diff_secx, 1))+'</td>'
+
+                    wuersz += ' |'
+                    if plane_dict[pentry][17] != "":
+                        thenx1 = plane_dict[pentry][17]
+                        nowx1 = datetime.datetime.now()
+                        diff_secx1 = (nowx1 - thenx1).total_seconds()
+
+                        wuersz += '{:>6}'.format(str(round(diff_secx1, 1)))
+                        #zapis2 += '<td>'+str(round(diff_secx1, 1))+'</td>'
+                    else:
+                        wuersz += '{:>6}'.format(str('------'))
+                        #zapis2 += '<td>-----</td>'
+
+                    #print( wiersz)
+                    #rint('8', plane_dict[pentry][8],'9',plane_dict[pentry][9],'12',plane_dict[pentry][12],plane_dict[pentry][5],plane_dict[pentry][10] )
+                    # next 4 lines data for txt transit history
+                    #if transit_history_log == 1:
+                    #    if ((-transit_separation_REDALERT_FG < separation_deg2 < transit_separation_REDALERT_FG) and obj_B_alt > minimum_alt_transits)  or ((-transit_separation_REDALERT_FG < separation_deg < transit_separation_REDALERT_FG) and obj_A_alt > minimum_alt_transits):
+                    #        with open(transit_history_log_path,'a') as tra_txt:
+                    #            trans_wiersz = str(plane_dict[pentry][0])+wiersz+'\n'
+                    #            tra_txt.write(str(trans_wiersz))
+                    '''
+                    zapis=str(pentry)+','+str(plane_dict[pentry][1])+','+str(plane_dict[pentry][2])+','+\
+                    str(plane_dict[pentry][3])+','+str(plane_dict[pentry][4])+','+str(plane_dict[pentry][5])+','+\
+                    str(plane_dict[pentry][6])+','+str(plane_dict[pentry][7])+','+str(plane_dict[pentry][8])+','+\
+                    str(plane_dict[pentry][9])+','+str(plane_dict[pentry][10])+','+str(plane_dict[pentry][11])+','+\
+                    str(plane_dict[pentry][12])+','+str(plane_dict[pentry][13])+','+str(plane_dict[pentry][14])+','
+                    for ii,e in enumerate(plane_dict[pentry][15]):
+                        zapis += str(plane_dict[pentry][15][ii])+';'
+                    zapis += ','
+                    for ii,e in enumerate(plane_dict[pentry][16]):
+                        zapis += str(plane_dict[pentry][16][ii])+';'
+                    zapis += ','
+                    zapis += str(plane_dict[pentry][17])+','+str(datetime.datetime.now().strftime('%H:%M:%S'))+','
+
+                    if (obj_A_alt > minimum_alt_transits):
+                        zapis += str(plane_dict[pentry][27])+','+str(separation_deg)+','+str(obj_A_az)+','+str(plane_dict[pentry][24])+','
+                    else:
+                        zapis += ''+','+''+','+''+','+''+','
+                    if (obj_B_alt > minimum_alt_transits):
+                        zapis += str(plane_dict[pentry][21])+','+str(separation_deg2)+','+str(obj_B_az)+','+str(plane_dict[pentry][19])+','
+                    else:
+                        zapis += ''+','+''+','+''+','+''+','
+
+                    zapis += str(vm.name)+','+str(vs.name)+','+str(diff_seconds)+','
+                    zapis += str(altitudeX)+','
+                    zapis += '\n'
+                    #with open('/tmp/out.txt','a') as tsttxtzap:
+                    #    tsttxtzap.write(zapis)
+                    with open(out_path,'a') as tsttxtzap:
+                        tsttxtzap.write(zapis)
+                    '''
+                    
+                    
+            else:
+                if plane_dict[pentry][17] != "":
+                    then = plane_dict[pentry][17]
+                    now = datetime.datetime.now()
+                    diff_seconds = (now - then).total_seconds()
+                else:
+                    diff_seconds = 999
+                if plane_dict[pentry][1] != "":
+                    wuersz = ''
+                    wuersz += '{} {:7} {}'.format(YELLOW, str(plane_dict[pentry][1]), RESET)   ##flight
+                    #zapis2 +=  '<tr><td class="ytext">'+str(plane_dict[pentry][1])+'</td>'                                                 ##flight
+
+                else:
+                    wuersz = ''
+                    wuersz += '{} {:7} {}'.format(RESET, str(pentry),RESET)                    ##icao
+                    #zapis2 +=  '<tr><td>'+str(pentry)+'</td>'                                                 ##flight
+                    
+                if plane_dict[pentry][4] != "":
+                    if is_float_try(plane_dict[pentry][4]):
+                        elevation=int(plane_dict[pentry][4])    
+                    else:
+                        elevation=9999
+                    wuersz += '{} {:>6} {}'.format(elev_col(elevation), str(elevation),RESET)     ##elev
+                    #zapis2 += '<td>'+str(elevation)+'</td>'
+                    
+                else:
+                    wuersz += '{} {:>6} {}'.format(RESET,str('---'),RESET)                         ##elev
+                    #zapis2 += '<td>---</td>'
+
+                if plane_dict[pentry][11] != "":
+                    wuersz += '{:>5}'.format(str(plane_dict[pentry][11]))                          ##track
+                    #zapis2 += '<td>'+str(plane_dict[pentry][11])+'</td>'
+
+                else:
+                    wuersz += '{:>5}'.format(str('---'))
+                    #zapis2 += '<td>---</td>'
+                    
+                wuersz += '  |'
+                if plane_dict[pentry][5] != "":
+                    wuersz = ''
+                    wuersz += '{} {:>5} {}'.format(RESET, str(plane_dict[pentry][5]), RESET)       ##flight
+                    #zapis2 += '<td>'+plane_dict[pentry][5]+'</td>'
+
+                else:    
+                    wuersz += '{} {:>5} {}'.format(RESET, str('---'),RESET)    
+                    #zapis2 += '<td>---</td>'
+
+                wuersz += '|'
+
+
+                wuersz += '{} {:>5} {}'.format(RESET, str('---'),RESET)                     ## warn
+                #zapis2 += '<td>---</td>'
+
+                wuersz += '{} {:>5} {}'.format(RESET, str('---'),RESET) ## alt    
+                #zapis2 += '<td>---</td>'
+
+                wuersz += '  |'
+
+                wuersz += '{} {:>5} {}'.format(RESET, str('---'),RESET) ## alt    
+                #zapis2 += '<td>---</td>'
+
+                if diff_seconds > 5:
+                    wuersz += '{}'.format(str("!"))    
+                    #zapis2 += '<td>!</td>'
+                else:
+                    wuersz += '{}'.format(str(" "))
+                    #zapis2 += '<td> </td>'
+
+                wuersz += '{:>7}'.format(str('---'))                     ## az1 news
+                #zapis2 += '<td>---</td>'
+
+                ##zapis2 += '<td> ---- </td>'
+                wuersz += '{:>5}'.format(str('---'))                     ## az2
+                #zapis2 += '<td>---</td>'
+
+                wuersz += ' |'
+                wuersz += '{} {:>7} {}'.format(RESET, str('---'),RESET)                ## Sep
+                #zapis2 += '<td>---</td>'
+
+                wuersz += '{:>7}'.format(str('---')) 
+                #zapis2 += '<td>---</td>'
+                
+                wuersz += '{:>7}'.format(str('---')) 
+                #zapis2 += '<td>---</td>'
+                
+                wuersz += '{:>10}'.format(str('---')) 
+                #zapis2 += '<td>---</td>'
+
+                wuersz += ' |'
+                wuersz += '{} {:>7} {}'.format(RESET, str('---'),RESET)                ## Sep
+                #zapis2 += '<td>---</td>'
+
+                wuersz += '{:>7}'.format(str('---')) 
+                #zapis2 += '<td>---</td>'
+
+                wuersz += '{:>7}'.format(str('---')) 
+                #zapis2 += '<td>---</td>'
+
+                wuersz += '{:>10}'.format(str('---')) 
+                #zapis2 += '<td>---</td>'
+
+                wuersz += ' |'
+                thenx = plane_dict[pentry][0]
+                nowx = datetime.datetime.now()
+                diff_secx = (nowx - thenx).total_seconds()
+                
+                wuersz += '{:>6}'.format(str(round(diff_secx, 1)))
+                #zapis2 += '<td>'+str(round(diff_secx, 1))+'</td>'
+                
+                wuersz += ' |'
+
+                wuersz += '{:>6}'.format(str(' -----'))
+                #zapis2 += '<td>---</td>'
+            
+            print( wuersz)
+            #zapis2 += '</tr>'
+            #tsttxt.write(str(zapis2))
+                    
+
+        #tsttxt.write(str(zapis2))
+        #footer = ''
+        #footer += '<script>audioElements.play();sleep(700).then(() => {;audioElement10.play();sleep(700).then(() => {;audioElementmin.play();  })  })</script>'
+        
+        #print("fuuuuuuuuuuuuu",footer)
+        #footer_caly = str(footer)+'</table></body></html>'
+
+        #with open(out_path_html,'a') as tsttxt:
+        #    tsttxt.write(str(footer_caly))
+                    
+        print(print_lastline(diff_t))
+
+    return obj_A_alt, obj_A_az, obj_B_alt, obj_B_az 
+
+
+
+
+
+##########################################################################################################################################################
+# koniecc Tabeli TERMINAL
+##########################################################################################################################################################
+
+
+##########################################################################################################################################################
+# Tabela HTML
+##########################################################################################################################################################
+
+def tabela_html():
     global footer
     global last_t
     global last_sekundy
@@ -772,8 +1607,8 @@ def tabela():
     
     vm.compute(gatech)
     vs.compute(gatech)
-    moon_alt, moon_az= round(math.degrees(vm.alt), 1), round(math.degrees(vm.az), 1)
-    sun_alt, sun_az= round(math.degrees(vs.alt), 1), round(math.degrees(vs.az), 1)
+    obj_A_alt, obj_A_az= round(math.degrees(vm.alt), 1), round(math.degrees(vm.az), 1)
+    obj_B_alt, obj_B_az= round(math.degrees(vs.alt), 1), round(math.degrees(vs.az), 1)
     
     diff_t = (aktual_t - last_t).total_seconds()
     ## Update freq 1=1s, 0=realtime 
@@ -783,12 +1618,27 @@ def tabela():
 
         print('\033c')
 
-        # + " Flight info -----------|-------|Pred. closest   |-- Current Az/Alt ---|--- Transits: "+ str(vs.name) +" " +str(sun_az) +" "+ str(sun_alt) +'     &  '+ str(vm.name)+" "+ str(moon_az)+" "+ str(moon_alt)+ '')
+        # + " Flight info -----------|-------|Pred. closest   |-- Current Az/Alt ---|--- Transits: "+ str(vs.name) +" " +str(obj_B_az) +" "+ str(obj_B_alt) +'     &  '+ str(vm.name)+" "+ str(obj_A_az)+" "+ str(obj_A_alt)+ '')
         #print( '{:9} {:>6} {:>6} {} {:>5} {} {:>6} {:>7} {} {:>5} {:>6} {:>5} {} {:>7} {:>7} {:>7} {:>8} {} {:>7} {:>7} {:>7} {:>7} {} {:>5}'.format(\
         #' icao or', ' (m)', '(d)', '|', '(km)', '|', '(km)', '(d)', '|', '(d)', '(d)', '(l)', ' |', '(d)', '(km)', '(km)', '   (s)', '|', '(d)', '(km)', '(km)', '   (s)', ' |', '(s)'))
         #print( '{:9} {:>6} {:>6} {} {:>5} {} {:>6} {:>7} {} {:>5} {:>6} {:>5} {} {:>7} {:>7} {:>7} {:>8} {} {:>7} {:>7} {:>7} {:>7} {} {:>5}'.format(\
         #' flight', 'elev', 'trck', '|', 'dist', '|', '[warn]', '[Alt]', '|', 'Alt', 'Azim', 'Azim', ' |', 'Sep', 'p2x', 'h2x', 'time2X', '|', 'Sep', 'p2x', 'h2x', 'time2X', ' |', 'age / latlon'))
         #print( "------------------------|-------|----------------|---------------------|----------------------------------|----------------------------------|-------|-------")
+        #                         background-color: #403f41;
+
+        header_snd='''<html>
+                    <head>
+                        <meta http-equiv="refresh" content="2">
+                        <meta http-equiv="Page-Enter" content="blendTrans(Duration=0.5)">
+                        <meta http-equiv="Page-Exit" content="blendTrans(Duration=0.5)">
+                        <script>
+                            function sleep (time) {
+                                return new Promise((resolve) => setTimeout(resolve, time));
+                            }
+                        </script>
+                        </head>
+                        <body style="background-color: #000000" >
+        '''
 
         header='''<html>
                     <head>
@@ -819,7 +1669,8 @@ def tabela():
 
 
                         thead {
-                            color: #8585e0;
+                            color: #bcbaba;
+                            background-color: #262626;
                         }
 
                         .ytext {
@@ -845,6 +1696,15 @@ def tabela():
                         }
                         .ctext {
                             color: #33cccc;
+                        }
+                        .lbtext {
+                            color: #a6b5fd;
+                        }
+                        .otext {
+                            color: #ff6600;
+                        }
+                        .wtext {
+                            color: #ffffff;
                         }
 
                         td:hover::after,
@@ -895,70 +1755,39 @@ def tabela():
     
                         </style>
                         <script>
-                            var audioElement60 = new Audio('60.wav');
-                            var audioElement50 = new Audio('50.wav');
-                            var audioElement40 = new Audio('40.wav');
-                            var audioElement30 = new Audio('30.wav');
-                            var audioElement20 = new Audio('20.wav');
-                            var audioElement15 = new Audio('15.wav');
-                            var audioElement10 = new Audio('10.wav');
-                            var audioElement9 = new Audio('9.wav');
-                            var audioElement8 = new Audio('8.wav');
-                            var audioElement7 = new Audio('7.wav');
-                            var audioElement6 = new Audio('6.wav');
-                            var audioElement5 = new Audio('5.wav');
-                            var audioElement4 = new Audio('4.wav');
-                            var audioElement3 = new Audio('3.wav');
-                            var audioElement2 = new Audio('2.wav');
-                            var audioElement1 = new Audio('1.wav');
-                            var audioElement0 = new Audio('0.wav');
-                            var audioElementmin = new Audio('Minutes.wav');
-                            var audioElements = new Audio('sun.mp3');
-                            var audioElementm = new Audio('moon.mp3');
-
-                            audioElements.addEventListener('loadeddata', () => { let duration = audioElements.duration; })
-                            audioElementm.addEventListener('loadeddata', () => { let duration = audioElementm.duration; })
-                            audioElementmin.addEventListener('loadeddata', () => { let duration = audioElementmin.duration; })
-                            audioElement60.addEventListener('loadeddata', () => { let duration = audioElement60.duration; })
-                            audioElement50.addEventListener('loadeddata', () => { let duration = audioElement50.duration; })
-                            audioElement40.addEventListener('loadeddata', () => { let duration = audioElement40.duration; })
-                            audioElement30.addEventListener('loadeddata', () => { let duration = audioElement30.duration; })
-                            audioElement20.addEventListener('loadeddata', () => { let duration = audioElement20.duration; })
-                            audioElement15.addEventListener('loadeddata', () => { let duration = audioElement15.duration; })
-                            audioElement10.addEventListener('loadeddata', () => { let duration = audioElement10.duration; })
-                            audioElement9.addEventListener('loadeddata', () => { let duration = audioElement9.duration; })
-                            audioElement8.addEventListener('loadeddata', () => { let duration = audioElement8.duration; })
-                            audioElement7.addEventListener('loadeddata', () => { let duration = audioElement7.duration; })
-                            audioElement6.addEventListener('loadeddata', () => { let duration = audioElement6.duration; })
-                            audioElement5.addEventListener('loadeddata', () => { let duration = audioElement5.duration; })
-                            audioElement4.addEventListener('loadeddata', () => { let duration = audioElement4.duration; })
-                            audioElement3.addEventListener('loadeddata', () => { let duration = audioElement3.duration; })
-                            audioElement2.addEventListener('loadeddata', () => { let duration = audioElement2.duration; })
-                            audioElement1.addEventListener('loadeddata', () => { let duration = audioElement1.duration; })
-                            audioElement0.addEventListener('loadeddata', () => { let duration = audioElement0.duration; })
-                            
                             function sleep (time) {
                                 return new Promise((resolve) => setTimeout(resolve, time));
                             }
                         </script>
                         </head>
-                <body background-color: black >
+                <body style="background-color: #000000" >
                 <table>
 
                 <thead>
-
                 <tr>
-                <td>icao or</td><td>(m)</td><td>(d)</td><td>(km)</td><td>pred</td><td>pred</td><td>Cur</td><td></td><td>(d)</td><td>(l)</td>
-                <td>(d)</td><td>(km)</td><td>(km)</td><td>(s)</td>
-                <td>(d)</td><td>(km)</td><td>(km)</td><td>(s)</td>
-                <td>(s)</td><td>lat/lon</td>
+                <td></td><td></td><td></td><td></td>
+                <td class="otext" style="text-align: right;">PREDIC</td><td class="otext">TED</td><td style="text-align: right;">CUR</td><td>R</td><td>ENT</td><td></td>
+                
+                <td style="text-align: right;" class="lbtext">Transi</td><td class="lbtext">ts: &#x263d</td><td class="lbtext">'''
+                
+        header += str(obj_B_alt)+'</td><td class="lbtext">'+str(obj_B_az)+'</td><td style="text-align: right;" class="ytext">Transi</td><td class="ytext">ts: &#x2609</td><td class="ytext">'+str(obj_A_alt)+'</td><td class="ytext">'+str(obj_A_az)
+        header += '''</td>
+                
+                <td>LAST</td><td>MSG</td>
                 </tr>
 
                 <tr>
-                <td>Flight</td><td>elev</td><td>track</td><td>dist</td><td>(km)</td><td>alt</td><td>alt</td><td></td><td>azim</td><td>NWSE</td>
-                <td>sep_m</td><td>p2x</td><td>h2x</td><td>t2x</td>
-                <td>sep_s</td><td>p2x</td><td>h2x</td><td>t2x</td>
-                <td>age1</td><td>age2</td>
+                <td class="ytext">callsgn</td><td>(m)</td><td>(d)</td><td>Cur(km)</td><td class="otext" style="text-align: right;">CLOSE</td><td class="otext">ST</td><td>Cur</td><td></td><td>(d)</td><td>(l)</td>
+                <td class="lbtext">(d)</td><td class="lbtext">(km)</td><td class="lbtext">(km)</td><td class="lbtext">(s)</td>
+                <td class="ytext">(d)</td><td class="ytext">(km)</td><td class="ytext">(km)</td><td class="ytext">(s)</td>
+                <td>(s)</td><td>lat</td>
+                </tr>
+
+                <tr>
+                <td class="wtext">/icao</td><td>elev</td><td>track</td><td>dist</td><td class="otext">(km)</td><td class="otext">alt(d)</td><td>alt(d)</td><td></td><td>azim</td><td>NWSE</td>
+                <td class="lbtext">sep_m</td><td class="lbtext">p2x</td><td class="lbtext">h2x</td><td class="lbtext">t2x</td>
+                <td class="ytext">sep_s</td><td class="ytext">p2x</td><td class="ytext">h2x</td><td class="ytext">t2x</td>
+                <td>any</td><td>lon</td>
                 </tr>
                 </thead>
                 
@@ -993,7 +1822,7 @@ def tabela():
                         now1 = datetime.datetime.now()
                         diff_minutes = (now1 - then1).total_seconds() / 60.0
 
-                        ##wuersz = ''
+                        #wuersz = ''
                         zapis2 = ''
 
                         
@@ -1143,8 +1972,10 @@ def tabela():
 
                             #wuersz += '{:>10}'.format(str(plane_dict[pentry][22]))            ## delta_tim    ## TIME UNTIL PLANE ARRIVE AT CROS
                             zapis2 += '<td class="ggtext">'+str(plane_dict[pentry][22])+'</td>'
-                            
-                            countdown_licznik, footer = countdown_m(plane_dict[pentry][22], countdown_licznik)
+                            #print("m",moon_tr_sound, minimum_alt_transits , obj_B_alt, transit_separation_sound_alert, separation_deg2)
+                            if (-transit_separation_sound_alert < separation_deg2 < transit_separation_sound_alert):
+                                if (int(moon_tr_sound) == 1) and (int(minimum_alt_transits) < obj_B_alt):
+                                    countdown_licznik, footer = countdown_m(plane_dict[pentry][22], countdown_licznik)
                             
                         elif (-transit_separation_REDALERT_FG < separation_deg2 < transit_separation_REDALERT_FG):
                             #wuersz += '{} {:>6} {}'.format(REDALERT, str(round((plane_dict[pentry][19]-plane_dict[pentry][18]),1)),RESET) ## SEPARACJA
@@ -1212,8 +2043,10 @@ def tabela():
 
                             #wuersz += '{:>10}'.format(str(plane_dict[pentry][26]))            ## delta_tim    ## TIME UNTIL PLANE ARRIVE AT CROS
                             zapis2 += '<td class="ggtext">+'+str(plane_dict[pentry][26])+'</td>'
-
-                            countdown_licznik, footer = countdown_s(plane_dict[pentry][26], countdown_licznik)
+                            #print("s", sun_tr_sound, minimum_alt_transits,obj_A_alt, transit_separation_sound_alert, separation_deg)
+                            if (-transit_separation_sound_alert < separation_deg < transit_separation_sound_alert):
+                                if (int(sun_tr_sound) == 1) and (int(minimum_alt_transits) < obj_A_alt):
+                                    countdown_licznik, footer = countdown_s(plane_dict[pentry][26], countdown_licznik)
 
                         elif (-transit_separation_REDALERT_FG < separation_deg < transit_separation_REDALERT_FG):
                             #wuersz += '{} {:>6} {}'.format(REDALERT, str(round((plane_dict[pentry][24]-plane_dict[pentry][23]),1)),RESET) ## SEPARACJA
@@ -1284,7 +2117,7 @@ def tabela():
                         #rint('8', plane_dict[pentry][8],'9',plane_dict[pentry][9],'12',plane_dict[pentry][12],plane_dict[pentry][5],plane_dict[pentry][10] )
                         # next 4 lines data for txt transit history
                         #if transit_history_log == 1:
-                        #    if ((-transit_separation_REDALERT_FG < separation_deg2 < transit_separation_REDALERT_FG) and sun_alt > minimum_alt_transits)  or ((-transit_separation_REDALERT_FG < separation_deg < transit_separation_REDALERT_FG) and moon_alt > minimum_alt_transits):
+                        #    if ((-transit_separation_REDALERT_FG < separation_deg2 < transit_separation_REDALERT_FG) and obj_B_alt > minimum_alt_transits)  or ((-transit_separation_REDALERT_FG < separation_deg < transit_separation_REDALERT_FG) and obj_A_alt > minimum_alt_transits):
                         #        with open(transit_history_log_path,'a') as tra_txt:
                         #            trans_wiersz = str(plane_dict[pentry][0])+wiersz+'\n'
                         #            tra_txt.write(str(trans_wiersz))
@@ -1302,12 +2135,12 @@ def tabela():
                         zapis += ','
                         zapis += str(plane_dict[pentry][17])+','+str(datetime.datetime.now().strftime('%H:%M:%S'))+','
 
-                        if (moon_alt > minimum_alt_transits):
-                            zapis += str(plane_dict[pentry][27])+','+str(separation_deg)+','+str(moon_az)+','+str(plane_dict[pentry][24])+','
+                        if (obj_A_alt > minimum_alt_transits):
+                            zapis += str(plane_dict[pentry][27])+','+str(separation_deg)+','+str(obj_A_az)+','+str(plane_dict[pentry][24])+','
                         else:
                             zapis += ''+','+''+','+''+','+''+','
-                        if (sun_alt > minimum_alt_transits):
-                            zapis += str(plane_dict[pentry][21])+','+str(separation_deg2)+','+str(sun_az)+','+str(plane_dict[pentry][19])+','
+                        if (obj_B_alt > minimum_alt_transits):
+                            zapis += str(plane_dict[pentry][21])+','+str(separation_deg2)+','+str(obj_B_az)+','+str(plane_dict[pentry][19])+','
                         else:
                             zapis += ''+','+''+','+''+','+''+','
 
@@ -1438,85 +2271,127 @@ def tabela():
                     #print( wiersz)
                 zapis2 += '</tr>'
                 tsttxt.write(str(zapis2))
-                    
+
+        last_line_tmp = str(print_lastline_html(diff_t))
+        load1, load5, load15 = os.getloadavg()
+        if 0. <= float(load1) < 1.:
+            load_col='class="ctext">'+str(load1)+' '+str(load5)+' '+str(load15)
+        elif 1. <= float(load1) < 2.:
+            load_col='class="gtext">'+str(load1)+' '+str(load5)+' '+str(load15)
+        elif 2. <= float(load1) < 3.:
+            load_col='class="ytext">'+str(load1)+' '+str(load5)+' '+str(load15)
+        elif 3. <= float(load1) < 4.:
+            load_col='class="rtext">'+str(load1)+' '+str(load5)+' '+str(load15)
+        elif float(load1) >= 4.:
+            load_col='class="rrtext">'+str(load1)+' '+str(load5)+' '+str(load15)
+        else:
+            load_col='>'+str(load1)+' '+str(load5)+' '+str(load15)
+
+        if os.path.isfile('/tmp/temp'):
+            DataFileName='/tmp/temp'
+            datafile=open(DataFileName, 'r')
+            dataz=datafile.readlines()
+            datafile.close()
+            #print(dataz)
+            dataz = dataz[0].split(' ')
+            #print(dataz[1])
+        else:
+            dataz=[0.0, 0.0, 0.0]
+
+        if 0 < float(dataz[1]) <= 30:
+            temp_col='class="ctext">'+str(dataz[1])+'C'
+        elif 30 < float(dataz[1]) <= 40:
+            temp_col='class="grtext">'+str(dataz[1])+'C'
+        elif 40 < float(dataz[1]) <= 50:
+            temp_col='class="yrtext">'+str(dataz[1])+'C'
+        elif 50 < float(dataz[1]) <= 60:
+            temp_col='class="otext">'+str(dataz[1])+'C'
+        elif 60 < float(dataz[1]) > 70:
+            temp_col='class="rrtext">'+str(dataz[1])+'C'
+        else:
+            temp_col='>'+str(dataz[1])+'C'
+        corearm=round(float(dataz[2])/1000000,0)
+        zapis3 = '</table><table style="background-color: #262626;"><th><td>'+last_line_tmp+'</td><td '+str(temp_col)+'</td><td>'+str(corearm)+'MHz</td><td>Load avg: </td><td '+str(load_col)+'</td></th></table>'
+
+        #print(last_line_tmp)
+        if int(gen_term) == 0:
+            print("Only HTML output active!")
+            print(str(print_lastline(diff_t)))
 
         #tsttxt.write(str(zapis2))
         #footer = ''
-        #footer += '<script>audioElements.play();sleep(700).then(() => {;audioElement10.play();sleep(700).then(() => {;audioElementmin.play();  })  })</script>'
+        #footer = '''<script>var audioElementm = new Audio('sun.mp3');
+        #                        audioElementm.addEventListener('loadeddata', () => { let duration = audioElementm.duration; })
+        #                        var audioElement3 = new Audio('3.wav');
+        #                        audioElement3.addEventListener('loadeddata', () => { let duration = audioElement3.duration; })
+        #                        var audioElementmin = new Audio('Minutes.wav');
+        #                        audioElementmin.addEventListener('loadeddata', () => { let duration = audioElementmin.duration; });'''
+        #footer += 'audioElementm.play(); sleep(700).then(() => {;'
+        #footer += 'audioElement3.play(); sleep(700).then(() => {;audioElementmin.play();  }) })</script>'
         
         #print("fuuuuuuuuuuuuu",footer)
-        footer_caly = str(footer)+'</table></body></html>'
+        footer_snd = str(header_snd)+ str(footer)+'</body></html>'
+        footer_caly = str(zapis3) +'</body></html>'
 
         with open(out_path_html,'a') as tsttxt:
             tsttxt.write(str(footer_caly))
-                    
+        
+        if int(gen_html_snd) == 1:
+            with open(out_path_html_snd,'w') as tsttxt:
+                tsttxt.write(str(footer_snd))
 
-        lastline=str(datetime.datetime.time(datetime.datetime.now()))
-        lastline+= " --- "
-        lastline+= str(len (plane_dict))
-        lastline+= " --- "
-        lastline+= str(int(diff_t))
-        if ignore_pressure == 1:
-            lastline+= " --- "+RED+"= "+RESET #+ str(pressure)+"hPa"
-        else:
-            lastline+= " --- "+YELLOW+"* "+RESET #+ str(pressure)+"hPa"
-        if (metar_active == 1 and ignore_pressure == 0):
-            lastline+= CYAN+str(pressure)+RESET+"hPa"+RESET
-        elif (metar_active == 0 and ignore_pressure == 1):
-            lastline+= RED+str(pressure)+RESET+"hPa"+RESET
-        elif (metar_active == 0 and ignore_pressure == 0):
-            lastline+= YELLOW+str(pressure)+RESET+"hPa"
 
-        lastline+= " Started: "+str(started)#+" Ago: "+str(aktual_txx)
-        print( lastline)
+    return obj_A_alt, obj_A_az, obj_B_alt, obj_B_az 
 
-    return moon_alt, moon_az, sun_alt, sun_az 
+##########################################################################################################################################################
+# koniecc Tabeli HTML
+##########################################################################################################################################################
 
-moon_alt, moon_az, sun_alt, sun_az = tabela()
-
-def pressure_corr(elevation):
-    global my_elevation
-    global my_elevation_const
-    global near_airport_elevation
-    #global pressure
-
+def print_lastline_html(diff_t):
+    lastline='<td>'+str(datetime.datetime.time(datetime.datetime.now()))+'</td>'
+    lastline+= '<td>'+" --- "+'</td>'
+    lastline+= '<td>'+str(len (plane_dict))+'</td>'
+    lastline+= '<td>'+" --- "+'</td>'
+    lastline+= '<td>'+str(int(diff_t))+'</td>'
     if ignore_pressure == 1:
-        elevation=int(elevation)
+        lastline+= '<td class="rtext">'+"= "+'</td>' #+ str(pressure)+"hPa"
     else:
-        elevation=int(elevation)
-        pressure = int(get_metar_press())
+        lastline+= '<td class="ytext">'+"* "+'</td>' #+ str(pressure)+"hPa"
+    if (metar_active == 1 and ignore_pressure == 0):
+        lastline+= '<td class="ctext">'+str(pressure)+"hPa"+'</td>'
+    elif (metar_active == 0 and ignore_pressure == 1):
+        lastline+= '<td class="rtext">'+str(pressure)+"hPa"+'</td>'
+    elif (metar_active == 0 and ignore_pressure == 0):
+        lastline+= '<td class="ytext">'+str(pressure)+"hPa"+'</td>'
+
+    lastline+= '<td>'+" Started: "+str(started)+'</td>' #+" Ago: "+str(aktual_txx)
+    return lastline
 
 
-        my_elevation_local = my_elevation * 3.28084 # why? # -90 ## taka sama wysokosc punktu obserwacji n.p.m jak pas na EPPO
-        near_airport_elevation_local = near_airport_elevation * 3.28084
+def print_lastline(diff_t):
+    lastline=str(datetime.datetime.time(datetime.datetime.now()))
+    lastline+= " --- "
+    lastline+= str(len (plane_dict))
+    lastline+= " --- "
+    lastline+= str(int(diff_t))
+    if ignore_pressure == 1:
+        lastline+= " --- "+RED+"= "+RESET #+ str(pressure)+"hPa"
+    else:
+        lastline+= " --- "+YELLOW+"* "+RESET #+ str(pressure)+"hPa"
+    if (metar_active == 1 and ignore_pressure == 0):
+        lastline+= CYAN+str(pressure)+RESET+"hPa"+RESET
+    elif (metar_active == 0 and ignore_pressure == 1):
+        lastline+= RED+str(pressure)+RESET+"hPa"+RESET
+    elif (metar_active == 0 and ignore_pressure == 0):
+        lastline+= YELLOW+str(pressure)+RESET+"hPa"
 
-        if elevation > 6500: # m or ft at this stage? 
-
-            # elev > 6500m altimeters calibrated to 1013hPa
-            elevation = elevation + ((1013 - pressure)*30) # now it's missing diff to my_elev!?!?
-            #my_elevation = my_elevation_const #  wtf why? # my_elev was somewhere set to airport elev
-
-        # elif, transition zone, but fok et
-        else:
-
-            # below 6500 altimeters calibrated to local airport pressure
-            # we need diff between elev of observation point and airport!
-
-            # todo
-            #near_airport_elevation
-            # probably this one is correct +/- diff between elev of observation point and airport
-            elevation = elevation - (my_elevation_local - near_airport_elevation_local)
-
-
-            #elevation - ((1013 - pressure)*30)) - my_elevation)
-            #elevation = elevation #- ((1013 - pressure)*30) - my_elevation)
-            #elevation = elevation - (((1013 - pressure)*30) - my_elevation) # adsb elev - ( pressure_corr - my_elev ) #30ft or m??
-
-            # pfff, not sure, testing atm # probably unwanted mix with > 6500ft :/
-            # elevation = (elevation + ((1013 - pressure)*30)) - my_elevation # adsb elev - ( pressure_corr - my_elev ) #30ft or m??
+    lastline+= " Started: "+str(started)#+" Ago: "+str(aktual_txx)
+    return lastline
 
 
-    return elevation
+ # startowy przebieg bez danych, html tez tu ma byc? Chyba tylko pod vs.alt/az vm.alt/az
+obj_A_alt, obj_A_az, obj_B_alt, obj_B_az = tabela_html()
+
 #
 # loop through all records from dump1090 port 10003 input stream on stdin
 #
@@ -1560,7 +2435,7 @@ while True:
                 #print('norm')
                 date_time_local = datetime.datetime.strptime(date + " " + time, '%Y/%m/%d %H:%M:%S.%f')
         #date_time_iso = datetime.datetime.strftime(date_time_local, '%Y-%m-%dT%H:%M:%S.%f') + str("%+d" % (-timezone_hours)).zfill(3)
-        
+
         #
         # check age of newest icao record, compare to newly-input value, and kill dictionary if too old (i.e. start fresh history)
         #
@@ -1572,8 +2447,7 @@ while True:
             if (diff_minutes > alert_duplicate_minutes):
                 del plane_dict[icao]
 
-        
-                
+
         #
         # if type 1 record then extract datetime/flight and create or update dictionary
         #
@@ -1606,8 +2480,6 @@ while True:
                 plane_dict[icao][0] = date_time_local
                 if flight != '':
                     plane_dict[icao][1] = flight
-                
-                    
 
         #
         # if type 4 record then extract speed/track
@@ -1619,15 +2491,15 @@ while True:
                 velocity_kmh = round(int(velocity)*1.852)
             else:
                 velocity = 900
-            
+
             if (icao not in plane_dict): 
                 plane_dict[icao] = [date_time_local, "", "", "", "", "", "", "", "", "", "", track,  "", "", velocity, [], [], "", "", "", "", "", "", "", "", "", "", "", ""]
-            
+
             else:
                 plane_dict[icao][0] = date_time_local
                 plane_dict[icao][11] = track
                 plane_dict[icao][14] = velocity_kmh
-                
+
 
         #
         # if type 3 record then extract datetime/elevation/lat/lon, calculate distance/azimuth/altitude, and create or update dictionary
@@ -1683,11 +2555,11 @@ while True:
                         # figure out if plane is approaching/holding/receding
                         #
                         if not is_float_try(plane_dict[icao][5]):
-                            print( plane_dict[icao][5] )
+                            #print( plane_dict[icao][5] )
                             if plane_dict[icao][5] == '':
                                 plane_dict[icao][5] = float(distance)
                         if not is_float_try(plane_dict[icao][10]):
-                            print( plane_dict[icao][10] )
+                            #print( plane_dict[icao][10] )
                             if plane_dict[icao][10] == '':
                                 plane_dict[icao][10] = float(distance)
 
@@ -1762,7 +2634,7 @@ while True:
             # elevation_feet     = int(round(int(round(elevation / 0.3048)/100)))
             velocity           = plane_dict[icao][14]
             xtd               = crosstrack(distance, (180 + azimuth) % 360, track)
-            
+
             plane_dict[icao][13] = xtd
 
             if (xtd <= xtd_tst and distance < warning_distance and warning == "" and direction != "RECEDING"):
@@ -1785,7 +2657,7 @@ while True:
             #
             # if ((elevation <= 8000) and distance <= 30):
                 # gong()
-            
+
             if (plane_dict[icao][5] <= alert_distance and plane_dict[icao][8] != "ENTERING"):
                 plane_dict[icao][8] = "ENTERING"
                 if entering_sound == 1:
@@ -1799,12 +2671,12 @@ while True:
 
 
             ## Transit check
-            tst_int1 = transit_pred((my_lat, my_lon), (plane_lat, plane_lon), track, velocity, elevation, moon_alt, moon_az)
-            tst_int2 = transit_pred((my_lat, my_lon), (plane_lat, plane_lon), track, velocity, elevation, sun_alt, sun_az)
-            
+            tst_int1 = transit_pred((my_lat, my_lon), (plane_lat, plane_lon), track, velocity, elevation, obj_A_alt, obj_A_az)
+            tst_int2 = transit_pred((my_lat, my_lon), (plane_lat, plane_lon), track, velocity, elevation, obj_B_alt, obj_B_az)
+
             if tst_int1 == 0:
                 #if (plane_dict[icao][23] == ''):
-                alt_a = 90.0 # moon_alt
+                alt_a = 90.0 # obj_A_alt
                 dst_p2x = 996
                 delta_time = 0
                 dst_h2x = 998
@@ -1819,23 +2691,23 @@ while True:
                 dst_p2x = round(tst_int1[5],2)          ## dst_p2x        ## DISTANCE PLANE TO MOON AZIMUTH (CROSS)
                 delta_time = int(tst_int1[6])         ## delta_tim    ## TIME UNTIL PLANE ARRIVE AT CROSS POINT
                 plane_dict[icao][25] = dst_h2x        ## dst_h2x        ## DISTANCE MY_POS TO CROSS POINT
-                plane_dict[icao][23] = moon_alt
+                plane_dict[icao][23] = obj_A_alt
                 plane_dict[icao][24] = alt_a 
                 plane_dict[icao][26] = delta_time 
                 plane_dict[icao][27] = dst_p2x         ## dst_p2x        ## DISTANCE PLANE TO MOON AZIMUTH (CROSS)    
-                
+
                 if is_float_try(plane_dict[icao][24]) and is_float_try(plane_dict[icao][23]):
                     separation_deg = round(float(plane_dict[icao][24]-plane_dict[icao][23]),1)
                 else:
                     separation_deg = 90.0
                 if (-transit_separation_sound_alert < separation_deg < transit_separation_sound_alert):
-                    if (sun_tr_sound == 1 and moon_alt > minimum_alt_transits): # cos tu jest na odwrot
+                    if (sun_tr_sound == 1 and obj_A_alt > minimum_alt_transits): # cos tu jest na odwrot
                         gong() # SUN!!!
                         #pass
-                
+
             if tst_int2 == 0:
                 #if (plane_dict[icao][23] == ''):
-                alt_a = 90.0 # moon_alt
+                alt_a = 90.0 # obj_A_alt
                 dst_p2x = 996
                 delta_time = 0
                 dst_h2x = 998
@@ -1851,19 +2723,26 @@ while True:
                 dst_p2x = round(tst_int2[5],2)          ## dst_p2x        ## DISTANCE PLANE TO SUN AZIMUTH (CROSS)
                 delta_time = int(tst_int2[6])         ## delta_tim    ## TIME UNTIL PLANE ARRIVE AT CROSS POINT
                 plane_dict[icao][20] = dst_h2x        ## dst_h2x        ## DISTANCE MY_POS TO CROSS POINT
-                plane_dict[icao][18] = sun_alt
+                plane_dict[icao][18] = obj_B_alt
                 plane_dict[icao][19] = alt_a 
                 plane_dict[icao][22] = delta_time 
                 plane_dict[icao][21] = dst_p2x         ## dst_p2x        ## DISTANCE PLANE TO SUN AZIMUTH (CROSS)    
-            
+
                 if is_float_try(plane_dict[icao][19]) and is_float_try(plane_dict[icao][18]):
                     separation_deg2 = round(float(plane_dict[icao][19]-plane_dict[icao][18]),1)
                 else:
                     separation_deg2 = 90.0
                 if (-transit_separation_sound_alert < separation_deg2 < transit_separation_sound_alert):
-                    if (moon_tr_sound == 1 and sun_alt > minimum_alt_transits): # cos tu jest na odwrot
+                    if (moon_tr_sound == 1 and obj_B_alt > minimum_alt_transits): # cos tu jest na odwrot
                         gong()
                         #pass
 
-    moon_alt, moon_az, sun_alt, sun_az = tabela()
+    if int(gen_html) == 1:
+        obj_A_alt, obj_A_az, obj_B_alt, obj_B_az = tabela_html()
+        if int(gen_term) == 1:
+            tabela_terminal()
+    else:
+        if int(gen_term) == 1:
+            obj_A_alt, obj_A_az, obj_B_alt, obj_B_az = tabela_terminal()
+    
     clean_dict()
