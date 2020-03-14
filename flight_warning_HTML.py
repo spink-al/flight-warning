@@ -622,7 +622,7 @@ def countdown_s(sekundy, countdown_licznik):
             footer = '''<script>var audioElements = new Audio('sun.mp3');
                                 audioElements.addEventListener('loadeddata', () => { let duration = audioElements.duration; })
                                 var audioElement50 = new Audio('50.wav');
-                                audioElement50.addEventListener('loadeddata', () => { let duration = audioElement50.duration; })'''
+                                audioElement50.addEventListener('loadeddata', () => { let duration = audioElement50.duration; });'''
             footer += 'audioElements.play();sleep(700).then(() => {;'
             footer += 'audioElement50.play();})</script>'
             countdown_licznik += 1
@@ -631,7 +631,7 @@ def countdown_s(sekundy, countdown_licznik):
             footer = '''<script>var audioElements = new Audio('sun.mp3');
                                 audioElements.addEventListener('loadeddata', () => { let duration = audioElements.duration; })
                                 var audioElement40 = new Audio('40.wav');
-                                audioElement40.addEventListener('loadeddata', () => { let duration = audioElement40.duration; })'''
+                                audioElement40.addEventListener('loadeddata', () => { let duration = audioElement40.duration; });'''
             footer += 'audioElements.play();sleep(700).then(() => {;'
             footer += 'audioElement40.play();})</script>'
             countdown_licznik += 1
@@ -640,7 +640,7 @@ def countdown_s(sekundy, countdown_licznik):
             footer = '''<script>var audioElements = new Audio('sun.mp3');
                                 audioElements.addEventListener('loadeddata', () => { let duration = audioElements.duration; })
                                 var audioElement30 = new Audio('30.wav');
-                                audioElement30.addEventListener('loadeddata', () => { let duration = audioElement30.duration; })'''
+                                audioElement30.addEventListener('loadeddata', () => { let duration = audioElement30.duration; });'''
             footer += 'audioElements.play();sleep(700).then(() => {;'
             footer += 'audioElement30.play();})</script>'
             countdown_licznik += 1
@@ -649,7 +649,7 @@ def countdown_s(sekundy, countdown_licznik):
             footer = '''<script>var audioElements = new Audio('sun.mp3');
                                 audioElements.addEventListener('loadeddata', () => { let duration = audioElements.duration; })
                                 var audioElement20 = new Audio('20.wav');
-                                audioElement20.addEventListener('loadeddata', () => { let duration = audioElement20.duration; })'''
+                                audioElement20.addEventListener('loadeddata', () => { let duration = audioElement20.duration; });'''
             footer += 'audioElements.play();sleep(700).then(() => {;'
             footer += 'audioElement20.play();})</script>'
             countdown_licznik += 1
@@ -658,7 +658,7 @@ def countdown_s(sekundy, countdown_licznik):
             footer = '''<script>var audioElements = new Audio('sun.mp3');
                                 audioElements.addEventListener('loadeddata', () => { let duration = audioElements.duration; })
                                 var audioElement15 = new Audio('15.wav');
-                                audioElement15.addEventListener('loadeddata', () => { let duration = audioElement15.duration; })'''
+                                audioElement15.addEventListener('loadeddata', () => { let duration = audioElement15.duration; });'''
             footer += 'audioElements.play();sleep(700).then(() => {;'
             footer += 'audioElement15.play();})</script>'
             countdown_licznik += 1
@@ -667,7 +667,7 @@ def countdown_s(sekundy, countdown_licznik):
             footer = '''<script>var audioElements = new Audio('sun.mp3');
                                 audioElements.addEventListener('loadeddata', () => { let duration = audioElements.duration; })
                                 var audioElement10 = new Audio('10.wav');
-                                audioElement10.addEventListener('loadeddata', () => { let duration = audioElement10.duration; })'''
+                                audioElement10.addEventListener('loadeddata', () => { let duration = audioElement10.duration; });'''
             footer += 'audioElements.play();sleep(700).then(() => {;'
             footer += 'audioElement10.play();})</script>'
             countdown_licznik += 1
@@ -676,7 +676,7 @@ def countdown_s(sekundy, countdown_licznik):
             footer = '''<script>var audioElements = new Audio('sun.mp3');
                                 audioElements.addEventListener('loadeddata', () => { let duration = audioElements.duration; })
                                 var audioElement0 = new Audio('0.wav');
-                                audioElement0.addEventListener('loadeddata', () => { let duration = audioElement0.duration; })'''
+                                audioElement0.addEventListener('loadeddata', () => { let duration = audioElement0.duration; });'''
             footer += 'audioElements.play();sleep(700).then(() => {;'
             footer += 'audioElement0.play();})</script>'
             countdown_licznik += 1
@@ -685,7 +685,7 @@ def countdown_s(sekundy, countdown_licznik):
             footer = '''<script>var audioElements = new Audio('sun.mp3');
                                 audioElements.addEventListener('loadeddata', () => { let duration = audioElements.duration; })
                                 var audioElement1 = new Audio('1.wav');
-                                audioElement1.addEventListener('loadeddata', () => { let duration = audioElement1.duration; })'''
+                                audioElement1.addEventListener('loadeddata', () => { let duration = audioElement1.duration; });'''
             footer += 'audioElements.play();sleep(700).then(() => {;'
             footer += 'audioElement1.play();})</script>'
             countdown_licznik += 1
@@ -694,7 +694,7 @@ def countdown_s(sekundy, countdown_licznik):
             footer = '''<script>var audioElements = new Audio('sun.mp3');
                                 audioElements.addEventListener('loadeddata', () => { let duration = audioElements.duration; })
                                 var audioElement2 = new Audio('2.wav');
-                                audioElement2.addEventListener('loadeddata', () => { let duration = audioElement2.duration; })'''
+                                audioElement2.addEventListener('loadeddata', () => { let duration = audioElement2.duration; });'''
             footer += 'audioElements.play();sleep(700).then(() => {;'
             footer += 'audioElement2.play();})</script>'
             countdown_licznik += 1
@@ -703,7 +703,7 @@ def countdown_s(sekundy, countdown_licznik):
             footer = '''<script>var audioElements = new Audio('sun.mp3');
                                 audioElements.addEventListener('loadeddata', () => { let duration = audioElements.duration; })
                                 var audioElement3 = new Audio('3.wav');
-                                audioElement3.addEventListener('loadeddata', () => { let duration = audioElement3.duration; })'''
+                                audioElement3.addEventListener('loadeddata', () => { let duration = audioElement3.duration; });'''
             footer += 'audioElements.play();sleep(700).then(() => {;'
             footer += 'audioElement3.play();})</script>'
             countdown_licznik += 1
@@ -712,7 +712,7 @@ def countdown_s(sekundy, countdown_licznik):
             footer = '''<script>var audioElements = new Audio('sun.mp3');
                                 audioElements.addEventListener('loadeddata', () => { let duration = audioElements.duration; })
                                 var audioElement4 = new Audio('4.wav');
-                                audioElement4.addEventListener('loadeddata', () => { let duration = audioElement4.duration; })'''
+                                audioElement4.addEventListener('loadeddata', () => { let duration = audioElement4.duration; });'''
             footer += 'audioElements.play();sleep(700).then(() => {;'
             footer += 'audioElement4.play();})</script>'
             countdown_licznik += 1
@@ -721,7 +721,7 @@ def countdown_s(sekundy, countdown_licznik):
             footer = '''<script>var audioElements = new Audio('sun.mp3');
                                 audioElements.addEventListener('loadeddata', () => { let duration = audioElements.duration; })
                                 var audioElement5 = new Audio('5.wav');
-                                audioElement5.addEventListener('loadeddata', () => { let duration = audioElement5.duration; })'''
+                                audioElement5.addEventListener('loadeddata', () => { let duration = audioElement5.duration; });'''
             footer += 'audioElements.play();sleep(700).then(() => {;'
             footer += 'audioElement5.play();})</script>'
             countdown_licznik += 1
@@ -730,7 +730,7 @@ def countdown_s(sekundy, countdown_licznik):
             footer = '''<script>var audioElements = new Audio('sun.mp3');
                                 audioElements.addEventListener('loadeddata', () => { let duration = audioElements.duration; })
                                 var audioElement6 = new Audio('6.wav');
-                                audioElement6.addEventListener('loadeddata', () => { let duration = audioElement6.duration; })'''
+                                audioElement6.addEventListener('loadeddata', () => { let duration = audioElement6.duration; });'''
             footer += 'audioElements.play();sleep(700).then(() => {;'
             footer += 'audioElement6.play();})</script>'
             countdown_licznik += 1
@@ -739,7 +739,7 @@ def countdown_s(sekundy, countdown_licznik):
             footer = '''<script>var audioElements = new Audio('sun.mp3');
                                 audioElements.addEventListener('loadeddata', () => { let duration = audioElements.duration; })
                                 var audioElement7 = new Audio('7.wav');
-                                audioElement7.addEventListener('loadeddata', () => { let duration = audioElement7.duration; })'''
+                                audioElement7.addEventListener('loadeddata', () => { let duration = audioElement7.duration; });'''
             footer += 'audioElements.play();sleep(700).then(() => {;'
             footer += 'audioElement7.play();})</script>'
             countdown_licznik += 1
@@ -748,7 +748,7 @@ def countdown_s(sekundy, countdown_licznik):
             footer = '''<script>var audioElements = new Audio('sun.mp3');
                                 audioElements.addEventListener('loadeddata', () => { let duration = audioElements.duration; })
                                 var audioElement8 = new Audio('8.wav');
-                                audioElement8.addEventListener('loadeddata', () => { let duration = audioElement8.duration; })'''
+                                audioElement8.addEventListener('loadeddata', () => { let duration = audioElement8.duration; });'''
             footer = 'audioElements.play();sleep(700).then(() => {;'
             footer += 'audioElement8.play();})</script>'
             countdown_licznik += 1
@@ -757,7 +757,7 @@ def countdown_s(sekundy, countdown_licznik):
             footer = '''<script>var audioElements = new Audio('sun.mp3');
                                 audioElements.addEventListener('loadeddata', () => { let duration = audioElements.duration; })
                                 var audioElement9 = new Audio('9.wav');
-                                audioElement9.addEventListener('loadeddata', () => { let duration = audioElement9.duration; })'''
+                                audioElement9.addEventListener('loadeddata', () => { let duration = audioElement9.duration; });'''
             footer = 'audioElements.play();sleep(700).then(() => {;'
             footer += 'audioElement9.play();})</script>'
             countdown_licznik += 1
@@ -890,7 +890,7 @@ def countdown_m(sekundy, countdown_licznik):
             footer = '''<script>var audioElementm = new Audio('sun.mp3');
                                 audioElementm.addEventListener('loadeddata', () => { let duration = audioElementm.duration; })
                                 var audioElement50 = new Audio('50.wav');
-                                audioElement50.addEventListener('loadeddata', () => { let duration = audioElement50.duration; })'''
+                                audioElement50.addEventListener('loadeddata', () => { let duration = audioElement50.duration; });'''
             footer += 'audioElementm.play();sleep(700).then(() => {;'
             footer += 'audioElement50.play();})</script>'
             countdown_licznik += 1
@@ -899,7 +899,7 @@ def countdown_m(sekundy, countdown_licznik):
             footer = '''<script>var audioElementm = new Audio('sun.mp3');
                                 audioElementm.addEventListener('loadeddata', () => { let duration = audioElementm.duration; })
                                 var audioElement40 = new Audio('40.wav');
-                                audioElement40.addEventListener('loadeddata', () => { let duration = audioElement40.duration; })'''
+                                audioElement40.addEventListener('loadeddata', () => { let duration = audioElement40.duration; });'''
             footer += 'audioElementm.play();sleep(700).then(() => {;'
             footer += 'audioElement40.play();})</script>'
             countdown_licznik += 1
@@ -908,7 +908,7 @@ def countdown_m(sekundy, countdown_licznik):
             footer = '''<script>var audioElementm = new Audio('sun.mp3');
                                 audioElementm.addEventListener('loadeddata', () => { let duration = audioElementm.duration; })
                                 var audioElement30 = new Audio('30.wav');
-                                audioElement30.addEventListener('loadeddata', () => { let duration = audioElement30.duration; })'''
+                                audioElement30.addEventListener('loadeddata', () => { let duration = audioElement30.duration; });'''
             footer += 'audioElementm.play();sleep(700).then(() => {;'
             footer += 'audioElement30.play();})</script>'
             countdown_licznik += 1
@@ -917,7 +917,7 @@ def countdown_m(sekundy, countdown_licznik):
             footer = '''<script>var audioElementm = new Audio('sun.mp3');
                                 audioElementm.addEventListener('loadeddata', () => { let duration = audioElementm.duration; })
                                 var audioElement20 = new Audio('20.wav');
-                                audioElement20.addEventListener('loadeddata', () => { let duration = audioElement20.duration; })'''
+                                audioElement20.addEventListener('loadeddata', () => { let duration = audioElement20.duration; });'''
             footer += 'audioElementm.play();sleep(700).then(() => {;'
             footer += 'audioElement20.play();})</script>'
             countdown_licznik += 1
@@ -926,7 +926,7 @@ def countdown_m(sekundy, countdown_licznik):
             footer = '''<script>var audioElementm = new Audio('sun.mp3');
                                 audioElementm.addEventListener('loadeddata', () => { let duration = audioElementm.duration; })
                                 var audioElement15 = new Audio('15.wav');
-                                audioElement15.addEventListener('loadeddata', () => { let duration = audioElement15.duration; })'''
+                                audioElement15.addEventListener('loadeddata', () => { let duration = audioElement15.duration; });'''
             footer += 'audioElementm.play();sleep(700).then(() => {;'
             footer += 'audioElement15.play();})</script>'
             countdown_licznik += 1
@@ -935,7 +935,7 @@ def countdown_m(sekundy, countdown_licznik):
             footer = '''<script>var audioElementm = new Audio('sun.mp3');
                                 audioElementm.addEventListener('loadeddata', () => { let duration = audioElementm.duration; })
                                 var audioElement10 = new Audio('10.wav');
-                                audioElement10.addEventListener('loadeddata', () => { let duration = audioElement10.duration; })'''
+                                audioElement10.addEventListener('loadeddata', () => { let duration = audioElement10.duration; });'''
             footer += 'audioElementm.play();sleep(700).then(() => {;'
             footer += 'audioElement10.play();})</script>'
             countdown_licznik += 1
@@ -944,7 +944,7 @@ def countdown_m(sekundy, countdown_licznik):
             footer = '''<script>var audioElementm = new Audio('sun.mp3');
                                 audioElementm.addEventListener('loadeddata', () => { let duration = audioElementm.duration; })
                                 var audioElement0 = new Audio('0.wav');
-                                audioElement0.addEventListener('loadeddata', () => { let duration = audioElement0.duration; })'''
+                                audioElement0.addEventListener('loadeddata', () => { let duration = audioElement0.duration; });'''
             footer += 'audioElementm.play();sleep(700).then(() => {;'
             footer += 'audioElement0.play();})</script>'
             countdown_licznik += 1
@@ -953,7 +953,7 @@ def countdown_m(sekundy, countdown_licznik):
             footer = '''<script>var audioElementm = new Audio('sun.mp3');
                                 audioElementm.addEventListener('loadeddata', () => { let duration = audioElementm.duration; })
                                 var audioElement1 = new Audio('1.wav');
-                                audioElement1.addEventListener('loadeddata', () => { let duration = audioElement1.duration; })'''
+                                audioElement1.addEventListener('loadeddata', () => { let duration = audioElement1.duration; });'''
             footer += 'audioElementm.play();sleep(700).then(() => {;'
             footer += 'audioElement1.play();})</script>'
             countdown_licznik += 1
@@ -962,7 +962,7 @@ def countdown_m(sekundy, countdown_licznik):
             footer = '''<script>var audioElementm = new Audio('sun.mp3');
                                 audioElementm.addEventListener('loadeddata', () => { let duration = audioElementm.duration; })
                                 var audioElement2 = new Audio('2.wav');
-                                audioElement2.addEventListener('loadeddata', () => { let duration = audioElement2.duration; })'''
+                                audioElement2.addEventListener('loadeddata', () => { let duration = audioElement2.duration; });'''
             footer += 'audioElementm.play();sleep(700).then(() => {;'
             footer += 'audioElement2.play();})</script>'
             countdown_licznik += 1
@@ -980,7 +980,7 @@ def countdown_m(sekundy, countdown_licznik):
             footer = '''<script>var audioElementm = new Audio('sun.mp3');
                                 audioElementm.addEventListener('loadeddata', () => { let duration = audioElementm.duration; })
                                 var audioElement4 = new Audio('4.wav');
-                                audioElement4.addEventListener('loadeddata', () => { let duration = audioElement4.duration; })'''
+                                audioElement4.addEventListener('loadeddata', () => { let duration = audioElement4.duration; });'''
             footer += 'audioElementm.play();sleep(700).then(() => {;'
             footer += 'audioElement4.play();})</script>'
             countdown_licznik += 1
@@ -989,7 +989,7 @@ def countdown_m(sekundy, countdown_licznik):
             footer = '''<script>var audioElementm = new Audio('sun.mp3');
                                 audioElementm.addEventListener('loadeddata', () => { let duration = audioElementm.duration; })
                                 var audioElement5 = new Audio('5.wav');
-                                audioElement5.addEventListener('loadeddata', () => { let duration = audioElement5.duration; })'''
+                                audioElement5.addEventListener('loadeddata', () => { let duration = audioElement5.duration; });'''
             footer += 'audioElementm.play();sleep(700).then(() => {;'
             footer += 'audioElement5.play();})</script>'
             countdown_licznik += 1
@@ -998,7 +998,7 @@ def countdown_m(sekundy, countdown_licznik):
             footer = '''<script>var audioElementm = new Audio('sun.mp3');
                                 audioElementm.addEventListener('loadeddata', () => { let duration = audioElementm.duration; })
                                 var audioElement6 = new Audio('6.wav');
-                                audioElement6.addEventListener('loadeddata', () => { let duration = audioElement6.duration; })'''
+                                audioElement6.addEventListener('loadeddata', () => { let duration = audioElement6.duration; });'''
             footer += 'audioElementm.play();sleep(700).then(() => {;'
             footer += 'audioElement6.play();})</script>'
             countdown_licznik += 1
@@ -1007,7 +1007,7 @@ def countdown_m(sekundy, countdown_licznik):
             footer = '''<script>var audioElementm = new Audio('sun.mp3');
                                 audioElementm.addEventListener('loadeddata', () => { let duration = audioElementm.duration; })
                                 var audioElement7 = new Audio('7.wav');
-                                audioElement7.addEventListener('loadeddata', () => { let duration = audioElement7.duration; })'''
+                                audioElement7.addEventListener('loadeddata', () => { let duration = audioElement7.duration; });'''
             footer += 'audioElementm.play();sleep(700).then(() => {;'
             footer += 'audioElement7.play();})</script>'
             countdown_licznik += 1
@@ -1016,7 +1016,7 @@ def countdown_m(sekundy, countdown_licznik):
             footer = '''<script>var audioElementm = new Audio('sun.mp3');
                                 audioElementm.addEventListener('loadeddata', () => { let duration = audioElementm.duration; })
                                 var audioElement8 = new Audio('8.wav');
-                                audioElement8.addEventListener('loadeddata', () => { let duration = audioElement8.duration; })'''
+                                audioElement8.addEventListener('loadeddata', () => { let duration = audioElement8.duration; });'''
             footer = 'audioElementm.play();sleep(700).then(() => {;'
             footer += 'audioElement8.play();})</script>'
             countdown_licznik += 1
@@ -1025,7 +1025,7 @@ def countdown_m(sekundy, countdown_licznik):
             footer = '''<script>var audioElementm = new Audio('sun.mp3');
                                 audioElementm.addEventListener('loadeddata', () => { let duration = audioElementm.duration; })
                                 var audioElement9 = new Audio('9.wav');
-                                audioElement9.addEventListener('loadeddata', () => { let duration = audioElement9.duration; })'''
+                                audioElement9.addEventListener('loadeddata', () => { let duration = audioElement9.duration; });'''
             footer = 'audioElementm.play();sleep(700).then(() => {;'
             footer += 'audioElement9.play();})</script>'
             countdown_licznik += 1
