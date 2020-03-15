@@ -69,7 +69,7 @@ luns = u"\u263d"
 
 #with open('/etc/raspap/location_settings.json') as f:
 with open('location_settings.json') as f:
-     LOCATION_CONF = json.load(f)
+    LOCATION_CONF = json.load(f)
 
 #with open('/etc/raspap/fw_settings.json') as f:
 with open('fw_settings.json') as f:
