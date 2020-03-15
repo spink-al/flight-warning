@@ -6,12 +6,18 @@
 Original idea: https://github.com/darethehair/flight-warning
 =======================================================================
 flight_warning.py
-version 3.20200313 (web)
+v3.20200314 (web)
 
 =======================================================================
 Changes:
 =======================================================================
-v3.20200313 (web)
+v3.20200314 (web)
+- json conf (same folder atm, ready for gui configuration panel)
+- countdown javascript corrections
+
+v3.20200311 (web)
+- web table
+- countdown to transits if wav/mp3 files provided (see filenames in code)
 
 v0.2
 - try/except for plane lat/lon in MSG 3
@@ -54,54 +60,69 @@ import math
 import ephem
 import re
 from math import atan2, sin, cos, acos, radians, degrees, atan, asin, sqrt, isnan
-import flight_warning_Conf
+#import flight_warning_Conf
+import json
+
 #import flight_warning_Pressure
 sols = u"\u2609"
 luns = u"\u263d"
 
+#with open('/etc/raspap/location_settings.json') as f:
+with open('location_settings.json') as f:
+     LOCATION_CONF = json.load(f)
+
+#with open('/etc/raspap/fw_settings.json') as f:
+with open('fw_settings.json') as f:
+    FW_CONF = json.load(f)
+
+#for i  key, value in enumerate(data.items()):
+#    print(key, value)
+#time.sleep(2.5)
+
+#exit()
 last_sekundy = -1
 footer=''
 if os.name == 'nt':
     print(os.name)
     os.system('color')
     os.system('mode con: cols=160 lines=13')
-    metar_active = int(flight_warning_Conf.metar_active)
-    metar_path = str(flight_warning_Conf.metar_path) # windows \\ in path should work
+    metar_active = int(FW_CONF['metar_active'])
+    metar_path = str(FW_CONF['metar_path']) # windows \\ in path should work
 
-    out_path = str(flight_warning_Conf.out_path) # windows \\ in path should work
-    out_path_html = str(flight_warning_Conf.out_path_html) # windows \\ in path should work
-    out_path_html_snd = str(flight_warning_Conf.out_path_html_snd) # windows \\ in path should work
+    out_path = str(FW_CONF['out_path']) # windows \\ in path should work
+    out_path_html = str(FW_CONF['out_path_html']) # windows \\ in path should work
+    out_path_html_snd = str(FW_CONF['out_path_html_snd']) # windows \\ in path should work
 else:
     print(os.name)
-    metar_active = int(flight_warning_Conf.metar_active)
-    metar_path = str(flight_warning_Conf.metar_path)
+    metar_active = int(FW_CONF['metar_active'])
+    metar_path = str(FW_CONF['metar_path'])
 
-    out_path = str(flight_warning_Conf.out_path)
-    out_path_html = str(flight_warning_Conf.out_path_html) # windows \\ in path should work
-    out_path_html_snd = str(flight_warning_Conf.out_path_html_snd) # windows \\ in path should work
+    out_path = str(FW_CONF['out_path'])
+    out_path_html = str(FW_CONF['out_path_html']) # windows \\ in path should work
+    out_path_html_snd = str(FW_CONF['out_path_html_snd']) # windows \\ in path should work
 
     #out_path = '/tmp/out.txt'
 
 
-ignore_pressure = int(flight_warning_Conf.ignore_pressure)
+ignore_pressure = int(FW_CONF['ignore_pressure'])
 
-my_lat = float(flight_warning_Conf.MY_LAT)
-my_lon = float(flight_warning_Conf.MY_LON)
-my_alt = int(flight_warning_Conf.MY_ALT)
+my_lat = float(LOCATION_CONF['MY_LAT'])
+my_lon = float(LOCATION_CONF['MY_LON'])
+my_alt = int(LOCATION_CONF['MY_ALT'])
 
-time_corr = int(flight_warning_Conf.time_corr)
-minutes_add = int(flight_warning_Conf.minutes_add)
+time_corr = int(FW_CONF['time_corr'])
+minutes_add = int(FW_CONF['minutes_add'])
 
-time_corr_mlat = int(flight_warning_Conf.time_corr_mlat)
-minutes_add_mlat = int(flight_warning_Conf.time_corr_mlat)
+time_corr_mlat = int(FW_CONF['time_corr_mlat'])
+minutes_add_mlat = int(FW_CONF['time_corr_mlat'])
 
-time_corr_ephem = int(flight_warning_Conf.time_corr_ephem)
-minutes_add_ephem = int(flight_warning_Conf.time_corr_ephem)
+time_corr_ephem = int(FW_CONF['time_corr_ephem'])
+minutes_add_ephem = int(FW_CONF['time_corr_ephem'])
 
-gen_html = int(flight_warning_Conf.gen_html)
-gen_html_snd = int(flight_warning_Conf.gen_html_snd)
+gen_html = int(FW_CONF['gen_html'])
+gen_html_snd = int(FW_CONF['gen_html_snd'])
 
-gen_term = int(flight_warning_Conf.gen_term)
+gen_term = int(FW_CONF['gen_term'])
 
 
 print( "Starting...")
@@ -148,41 +169,41 @@ gong_t = datetime.datetime.now()
 # set desired distance and time limits
 #
 
-warning_distance                 = int(flight_warning_Conf.warning_distance)
-alert_duplicate_minutes          = int(flight_warning_Conf.alert_duplicate_minutes)
-alert_distance                   = int(flight_warning_Conf.alert_distance)
-xtd_tst                          = int(flight_warning_Conf.xtd_tst)
+warning_distance                 = int(FW_CONF['warning_distance'])
+alert_duplicate_minutes          = int(FW_CONF['alert_duplicate_minutes'])
+alert_distance                   = int(FW_CONF['alert_distance'])
+xtd_tst                          = int(FW_CONF['xtd_tst'])
 
-transit_separation_sound_alert = float(flight_warning_Conf.transit_separation_sound_alert)
-transit_separation_REDALERT_FG   = int(flight_warning_Conf.transit_separation_REDALERT_FG)
-transit_separation_GREENALERT_FG = int(flight_warning_Conf.transit_separation_GREENALERT_FG)
-transit_separation_notignored    = int(flight_warning_Conf.transit_separation_notignored)
+transit_separation_sound_alert = float(FW_CONF['transit_separation_sound_alert'])
+transit_separation_REDALERT_FG   = int(FW_CONF['transit_separation_REDALERT_FG'])
+transit_separation_GREENALERT_FG = int(FW_CONF['transit_separation_GREENALERT_FG'])
+transit_separation_notignored    = int(FW_CONF['transit_separation_notignored'])
 
-transit_history_log              = int(flight_warning_Conf.transit_history_log)
-transit_history_log_path         = str(flight_warning_Conf.transit_history_log_path)
+transit_history_log              = int(FW_CONF['transit_history_log'])
+transit_history_log_path         = str(FW_CONF['transit_history_log_path'])
 
-heatmap_latlon_log               = int(flight_warning_Conf.heatmap_latlon_log)
-heatmap_latlon_log_path          = str(flight_warning_Conf.heatmap_latlon_log_path)
+heatmap_latlon_log               = int(FW_CONF['heatmap_latlon_log'])
+heatmap_latlon_log_path          = str(FW_CONF['heatmap_latlon_log_path'])
 
-sun_tr_sound                     = int(flight_warning_Conf.sun_tr_sound)
-moon_tr_sound                    = int(flight_warning_Conf.moon_tr_sound)
+sun_tr_sound                     = int(FW_CONF['sun_tr_sound'])
+moon_tr_sound                    = int(FW_CONF['moon_tr_sound'])
 
-terminal_beeps                   = int(flight_warning_Conf.terminal_beeps)
-entering_sound                   = int(flight_warning_Conf.entering_sound)
-detected_sound                   = int(flight_warning_Conf.detected_sound)
-min_t_sound                      = float(flight_warning_Conf.min_t_sound)
+terminal_beeps                   = int(FW_CONF['terminal_beeps'])
+entering_sound                   = int(FW_CONF['entering_sound'])
+detected_sound                   = int(FW_CONF['detected_sound'])
+min_t_sound                      = float(FW_CONF['min_t_sound'])
 
-display_limit = int(flight_warning_Conf.display_limit)
-minimum_alt_transits= int(flight_warning_Conf.minimum_alt_transits) 
+display_limit = int(FW_CONF['display_limit'])
+minimum_alt_transits= int(FW_CONF['minimum_alt_transits']) 
 #pressure = 1013
-pressure = int(flight_warning_Conf.pressure)
+pressure = int(FW_CONF['pressure'])
 
 #
 # set geographic location and elevation
 #
 my_elevation_const = my_alt # why                    #yourantennaelevation
 my_elevation = my_alt       # why                     #yourantennaelevation
-near_airport_elevation = int(flight_warning_Conf.near_airport_elevation)
+near_airport_elevation = int(FW_CONF['near_airport_elevation'])
 
 
 gatech = ephem.Observer()
@@ -391,14 +412,14 @@ def alt_col_2(altitude):
 
 
 def elev_col_2(elevation):
-    if (elevation >= 4000 and elevation <= 8000):
-        return ' class="ptext"'
-    elif (elevation >= 2000 and elevation < 4000):
+    if (4000 <= elevation <= 8000):
+        return ' class="ctext"'
+    elif (2000 >= elevation < 4000):
         return ' class="gtext"'
-    elif (elevation > 0 and elevation < 2000):
-        return ' class="yptext"'
+    elif (0 > elevation < 2000):
+        return ' class="ytext"'
     else:
-        return ''
+        return ' class="ptext"'
     
 def wind_deg_to_str1(deg):
         if   deg >=  11.25 and deg <  33.75: return 'NNE'
@@ -463,7 +484,7 @@ def get_metar_press():
                 if "EPPO" in line: 
                     metar_line.append(line.strip('\r\n').rstrip().strip())
                 else:
-                    return 1012
+                    return 1013
 
             for f, fields in enumerate(metar_line): 
                 metar_fields = fields.split(" ")
@@ -490,7 +511,7 @@ def pressure_corr(elevation):
     global my_elevation
     global my_elevation_const
     global near_airport_elevation
-    #global pressure
+    global pressure
 
     if ignore_pressure == 1:
         elevation=int(elevation)
@@ -571,26 +592,25 @@ def countdown_s(sekundy, countdown_licznik):
         return countdown_licznik, footer
     if (countdown_licznik >= 0): 
      if (last_sekundy == -1) or (last_sekundy > sekundy):
-        #print('x')
+        print('x')
         #if sekundy > 186:
-        #    footer = '''<script>var audioElementm = new Audio('sun.mp3');
-        #                        audioElementm.addEventListener('loadeddata', () => { let duration = audioElementm.duration; })
+        #    footer = '''<script>var audioElements = new Audio('Sun.mp3');
         #                        var audioElement3 = new Audio('3.wav');
-        #                        audioElement3.addEventListener('loadeddata', () => { let duration = audioElement3.duration; })
         #                        var audioElementmin = new Audio('Minutes.wav');
+        #                        audioElements.addEventListener('loadeddata', () => { let duration = audioElements.duration; })
+        #                        audioElement3.addEventListener('loadeddata', () => { let duration = audioElement3.duration; })
         #                        audioElementmin.addEventListener('loadeddata', () => { let duration = audioElementmin.duration; });'''
-        #    footer += 'audioElementm.play(); sleep(700).then(() => {;'
+        #    footer += 'audioElements.play(); sleep(700).then(() => {; '
         #    footer += 'audioElement3.play(); sleep(700).then(() => {;audioElementmin.play();  }) })</script>'
         #    countdown_licznik += 1
         #    last_sekundy = sekundy
 
         if 179 <= sekundy <= 181:
-
             footer = '''<script>var audioElementm = new Audio('sun.mp3');
-                                audioElementm.addEventListener('loadeddata', () => { let duration = audioElementm.duration; })
                                 var audioElement3 = new Audio('3.wav');
-                                audioElement3.addEventListener('loadeddata', () => { let duration = audioElement3.duration; })
                                 var audioElementmin = new Audio('Minutes.wav');
+                                audioElementm.addEventListener('loadeddata', () => { let duration = audioElementm.duration; })
+                                audioElement3.addEventListener('loadeddata', () => { let duration = audioElement3.duration; })
                                 audioElementmin.addEventListener('loadeddata', () => { let duration = audioElementmin.duration; });'''
             footer += 'audioElementm.play(); sleep(700).then(() => {;'
             footer += 'audioElement3.play(); sleep(700).then(() => {;audioElementmin.play();  }) })</script>'
@@ -614,17 +634,19 @@ def countdown_s(sekundy, countdown_licznik):
                                 audioElement1.addEventListener('loadeddata', () => { let duration = audioElement1.duration; })
                                 var audioElementmin = new Audio('Minutes.wav');
                                 audioElementmin.addEventListener('loadeddata', () => { let duration = audioElementmin.duration; });'''
+
             footer += 'audioElementm.play();sleep(700).then(() => {;'
             footer += 'audioElement1.play();sleep(700).then(() => {;audioElementmin.play();  }) })</script>'
             countdown_licznik += 1
             last_sekundy = sekundy
         elif 48 <= sekundy <= 52:
             footer = '''<script>var audioElements = new Audio('sun.mp3');
-                                audioElements.addEventListener('loadeddata', () => { let duration = audioElements.duration; })
                                 var audioElement50 = new Audio('50.wav');
-                                audioElement50.addEventListener('loadeddata', () => { let duration = audioElement50.duration; });'''
-            footer += 'audioElements.play();sleep(700).then(() => {;'
-            footer += 'audioElement50.play();})</script>'
+                                audioElements.addEventListener('loadeddata', () => { let duration = audioElements.duration; })
+                                audioElement50.addEventListener('loadeddata', () => { let duration = audioElement50.duration; });
+                                '''
+
+            footer += 'audioElements.play();sleep(700).then(() => {; audioElement50.play(); })</script>'
             countdown_licznik += 1
             last_sekundy = sekundy
         elif 38 <= sekundy <= 42:
@@ -789,7 +811,7 @@ def countdown_m(sekundy, countdown_licznik):
         return countdown_licznik, footer
     if (countdown_licznik >= 0): 
      if (last_sekundy == -1) or (last_sekundy > sekundy):
-        #print('x')
+        print('x1')
         #if sekundy > 186:
         #    footer = '<script>audioElementm.play();sleep(700).then(() => {;'
         #    footer += 'audioElement20.play(); sleep(700).then(() => {;audioElementmin.play();  }) })</script>'
@@ -854,7 +876,7 @@ def countdown_m(sekundy, countdown_licznik):
 
         
         if 179 <= sekundy <= 181:
-            footer = '''<script>var audioElementm = new Audio('sun.mp3');
+            footer = '''<script>var audioElementm = new Audio('moon.mp3');
                                 audioElementm.addEventListener('loadeddata', () => { let duration = audioElementm.duration; })
                                 var audioElement3 = new Audio('3.wav');
                                 audioElement3.addEventListener('loadeddata', () => { let duration = audioElement3.duration; })
@@ -865,7 +887,7 @@ def countdown_m(sekundy, countdown_licznik):
             countdown_licznik += 1
             last_sekundy = sekundy
         elif 117 <= sekundy <= 123:
-            footer = '''<script>var audioElementm = new Audio('sun.mp3');
+            footer = '''<script>var audioElementm = new Audio('moon.mp3');
                                 audioElementm.addEventListener('loadeddata', () => { let duration = audioElementm.duration; })
                                 var audioElement2 = new Audio('2.wav');
                                 audioElement2.addEventListener('loadeddata', () => { let duration = audioElement2.duration; })
@@ -876,7 +898,7 @@ def countdown_m(sekundy, countdown_licznik):
             countdown_licznik += 1
             last_sekundy = sekundy
         elif 58 <= sekundy <= 62:
-            footer = '''<script>var audioElementm = new Audio('sun.mp3');
+            footer = '''<script>var audioElementm = new Audio('moon.mp3');
                                 audioElementm.addEventListener('loadeddata', () => { let duration = audioElementm.duration; })
                                 var audioElement1 = new Audio('1.wav');
                                 audioElement1.addEventListener('loadeddata', () => { let duration = audioElement1.duration; })
@@ -887,7 +909,7 @@ def countdown_m(sekundy, countdown_licznik):
             countdown_licznik += 1
             last_sekundy = sekundy
         elif 48 <= sekundy <= 52:
-            footer = '''<script>var audioElementm = new Audio('sun.mp3');
+            footer = '''<script>var audioElementm = new Audio('moon.mp3');
                                 audioElementm.addEventListener('loadeddata', () => { let duration = audioElementm.duration; })
                                 var audioElement50 = new Audio('50.wav');
                                 audioElement50.addEventListener('loadeddata', () => { let duration = audioElement50.duration; });'''
@@ -896,7 +918,7 @@ def countdown_m(sekundy, countdown_licznik):
             countdown_licznik += 1
             last_sekundy = sekundy
         elif 38 <= sekundy <= 42:
-            footer = '''<script>var audioElementm = new Audio('sun.mp3');
+            footer = '''<script>var audioElementm = new Audio('moon.mp3');
                                 audioElementm.addEventListener('loadeddata', () => { let duration = audioElementm.duration; })
                                 var audioElement40 = new Audio('40.wav');
                                 audioElement40.addEventListener('loadeddata', () => { let duration = audioElement40.duration; });'''
@@ -905,7 +927,7 @@ def countdown_m(sekundy, countdown_licznik):
             countdown_licznik += 1
             last_sekundy = sekundy
         elif 28 <= sekundy <= 32:
-            footer = '''<script>var audioElementm = new Audio('sun.mp3');
+            footer = '''<script>var audioElementm = new Audio('moon.mp3');
                                 audioElementm.addEventListener('loadeddata', () => { let duration = audioElementm.duration; })
                                 var audioElement30 = new Audio('30.wav');
                                 audioElement30.addEventListener('loadeddata', () => { let duration = audioElement30.duration; });'''
@@ -914,7 +936,7 @@ def countdown_m(sekundy, countdown_licznik):
             countdown_licznik += 1
             last_sekundy = sekundy
         elif 18 <= sekundy <= 22:
-            footer = '''<script>var audioElementm = new Audio('sun.mp3');
+            footer = '''<script>var audioElementm = new Audio('moon.mp3');
                                 audioElementm.addEventListener('loadeddata', () => { let duration = audioElementm.duration; })
                                 var audioElement20 = new Audio('20.wav');
                                 audioElement20.addEventListener('loadeddata', () => { let duration = audioElement20.duration; });'''
@@ -923,7 +945,7 @@ def countdown_m(sekundy, countdown_licznik):
             countdown_licznik += 1
             last_sekundy = sekundy
         elif 14 <= sekundy <= 16:
-            footer = '''<script>var audioElementm = new Audio('sun.mp3');
+            footer = '''<script>var audioElementm = new Audio('moon.mp3');
                                 audioElementm.addEventListener('loadeddata', () => { let duration = audioElementm.duration; })
                                 var audioElement15 = new Audio('15.wav');
                                 audioElement15.addEventListener('loadeddata', () => { let duration = audioElement15.duration; });'''
@@ -932,7 +954,7 @@ def countdown_m(sekundy, countdown_licznik):
             countdown_licznik += 1
             last_sekundy = sekundy
         elif 10 <= sekundy <= 12:
-            footer = '''<script>var audioElementm = new Audio('sun.mp3');
+            footer = '''<script>var audioElementm = new Audio('moon.mp3');
                                 audioElementm.addEventListener('loadeddata', () => { let duration = audioElementm.duration; })
                                 var audioElement10 = new Audio('10.wav');
                                 audioElement10.addEventListener('loadeddata', () => { let duration = audioElement10.duration; });'''
@@ -941,7 +963,7 @@ def countdown_m(sekundy, countdown_licznik):
             countdown_licznik += 1
             last_sekundy = sekundy
         elif 0 < sekundy < 1:
-            footer = '''<script>var audioElementm = new Audio('sun.mp3');
+            footer = '''<script>var audioElementm = new Audio('moon.mp3');
                                 audioElementm.addEventListener('loadeddata', () => { let duration = audioElementm.duration; })
                                 var audioElement0 = new Audio('0.wav');
                                 audioElement0.addEventListener('loadeddata', () => { let duration = audioElement0.duration; });'''
@@ -950,7 +972,7 @@ def countdown_m(sekundy, countdown_licznik):
             countdown_licznik += 1
             last_sekundy = sekundy
         elif 1 <= sekundy < 2:
-            footer = '''<script>var audioElementm = new Audio('sun.mp3');
+            footer = '''<script>var audioElementm = new Audio('moon.mp3');
                                 audioElementm.addEventListener('loadeddata', () => { let duration = audioElementm.duration; })
                                 var audioElement1 = new Audio('1.wav');
                                 audioElement1.addEventListener('loadeddata', () => { let duration = audioElement1.duration; });'''
@@ -959,7 +981,7 @@ def countdown_m(sekundy, countdown_licznik):
             countdown_licznik += 1
             last_sekundy = sekundy
         elif 2 <= sekundy < 3:
-            footer = '''<script>var audioElementm = new Audio('sun.mp3');
+            footer = '''<script>var audioElementm = new Audio('moon.mp3');
                                 audioElementm.addEventListener('loadeddata', () => { let duration = audioElementm.duration; })
                                 var audioElement2 = new Audio('2.wav');
                                 audioElement2.addEventListener('loadeddata', () => { let duration = audioElement2.duration; });'''
@@ -968,16 +990,16 @@ def countdown_m(sekundy, countdown_licznik):
             countdown_licznik += 1
             last_sekundy = sekundy
         elif 3 <= sekundy < 4:
-            footer = '''<script>var audioElementm = new Audio('sun.mp3');
+            footer = '''<script>var audioElementm = new Audio('moon.mp3');
                                 audioElementm.addEventListener('loadeddata', () => { let duration = audioElementm.duration; })
                                 var audioElement3 = new Audio('3.wav');
-                                audioElement3.addEventListener('loadeddata', () => { let duration = audioElement3.duration; })'''
+                                audioElement3.addEventListener('loadeddata', () => { let duration = audioElement3.duration; });'''
             footer += 'audioElementm.play();sleep(700).then(() => {;'
             footer += 'audioElement3.play();})</script>'
             countdown_licznik += 1
             last_sekundy = sekundy
         elif 4 <= sekundy < 5:
-            footer = '''<script>var audioElementm = new Audio('sun.mp3');
+            footer = '''<script>var audioElementm = new Audio('moon.mp3');
                                 audioElementm.addEventListener('loadeddata', () => { let duration = audioElementm.duration; })
                                 var audioElement4 = new Audio('4.wav');
                                 audioElement4.addEventListener('loadeddata', () => { let duration = audioElement4.duration; });'''
@@ -986,7 +1008,7 @@ def countdown_m(sekundy, countdown_licznik):
             countdown_licznik += 1
             last_sekundy = sekundy
         elif 5 <= sekundy < 6:
-            footer = '''<script>var audioElementm = new Audio('sun.mp3');
+            footer = '''<script>var audioElementm = new Audio('moon.mp3');
                                 audioElementm.addEventListener('loadeddata', () => { let duration = audioElementm.duration; })
                                 var audioElement5 = new Audio('5.wav');
                                 audioElement5.addEventListener('loadeddata', () => { let duration = audioElement5.duration; });'''
@@ -995,7 +1017,7 @@ def countdown_m(sekundy, countdown_licznik):
             countdown_licznik += 1
             last_sekundy = sekundy
         elif 6 <= sekundy < 7:
-            footer = '''<script>var audioElementm = new Audio('sun.mp3');
+            footer = '''<script>var audioElementm = new Audio('moon.mp3');
                                 audioElementm.addEventListener('loadeddata', () => { let duration = audioElementm.duration; })
                                 var audioElement6 = new Audio('6.wav');
                                 audioElement6.addEventListener('loadeddata', () => { let duration = audioElement6.duration; });'''
@@ -1004,7 +1026,7 @@ def countdown_m(sekundy, countdown_licznik):
             countdown_licznik += 1
             last_sekundy = sekundy
         elif 7 <= sekundy < 8:
-            footer = '''<script>var audioElementm = new Audio('sun.mp3');
+            footer = '''<script>var audioElementm = new Audio('moon.mp3');
                                 audioElementm.addEventListener('loadeddata', () => { let duration = audioElementm.duration; })
                                 var audioElement7 = new Audio('7.wav');
                                 audioElement7.addEventListener('loadeddata', () => { let duration = audioElement7.duration; });'''
@@ -1013,7 +1035,7 @@ def countdown_m(sekundy, countdown_licznik):
             countdown_licznik += 1
             last_sekundy = sekundy
         elif 8 <= sekundy < 9:
-            footer = '''<script>var audioElementm = new Audio('sun.mp3');
+            footer = '''<script>var audioElementm = new Audio('moon.mp3');
                                 audioElementm.addEventListener('loadeddata', () => { let duration = audioElementm.duration; })
                                 var audioElement8 = new Audio('8.wav');
                                 audioElement8.addEventListener('loadeddata', () => { let duration = audioElement8.duration; });'''
@@ -1022,7 +1044,7 @@ def countdown_m(sekundy, countdown_licznik):
             countdown_licznik += 1
             last_sekundy = sekundy
         elif 9 <= sekundy < 10:
-            footer = '''<script>var audioElementm = new Audio('sun.mp3');
+            footer = '''<script>var audioElementm = new Audio('moon.mp3');
                                 audioElementm.addEventListener('loadeddata', () => { let duration = audioElementm.duration; })
                                 var audioElement9 = new Audio('9.wav');
                                 audioElement9.addEventListener('loadeddata', () => { let duration = audioElement9.duration; });'''
@@ -1259,8 +1281,6 @@ def tabela_terminal():
                         wuersz += '{:>10}'.format(str(plane_dict[pentry][22]))            ## delta_tim    ## TIME UNTIL PLANE ARRIVE AT CROS
                         #zapis2 += '<td class="ggtext">'+str(plane_dict[pentry][22])+'</td>'
                         
-                        #countdown_licznik, footer = countdown_m(plane_dict[pentry][22], countdown_licznik)
-                        
                     elif (-transit_separation_REDALERT_FG < separation_deg2 < transit_separation_REDALERT_FG):
                         wuersz += '{} {:>6} {}'.format(REDALERT, str(round((plane_dict[pentry][19]-plane_dict[pentry][18]),1)),RESET) ## SEPARACJA
                         #zapis2 += '<td class="rrtext">'+str(round((plane_dict[pentry][19]-plane_dict[pentry][18]),1))+'</td>'
@@ -1273,8 +1293,6 @@ def tabela_terminal():
 
                         wuersz += '{:>10}'.format(str(plane_dict[pentry][22]))            ## delta_tim    ## TIME UNTIL PLANE ARRIVE AT CROSS POINT
                         #zapis2 += '<td class="rrtext">'+str(plane_dict[pentry][22])+'</td>'
-
-                        #countdown_licznik, footer = countdown_m(plane_dict[pentry][22], countdown_licznik)
 
 
                     elif (-transit_separation_notignored < separation_deg2 < transit_separation_notignored):
@@ -1290,8 +1308,6 @@ def tabela_terminal():
                         wuersz += '{:>10}'.format(str(plane_dict[pentry][22]))            ## delta_tim    ## TIME UNTIL PLANE ARRIVE AT CROSS POINT    
                         #zapis2 += '<td>'+str(plane_dict[pentry][22])+'</td>'
 
-                        #countdown_licznik, footer = countdown_m(plane_dict[pentry][22], countdown_licznik)
-
                     else:
                         wuersz += '{:>8}'.format(str("---"))  ## SEPARACJA
                         #zapis2 += '<td> ---- </td>'
@@ -1304,8 +1320,6 @@ def tabela_terminal():
 
                         wuersz += '{:>10}'.format(str("---"))            ## delta_tim    ## TIME UNTIL PLANE ARRIVE AT CROSS POINT                        
                         #zapis2 += '<td> ---- </td>'
-
-                        #countdown_licznik, footer = countdown_s(plane_dict[pentry][22], countdown_licznik)
 
                     ###tu koniec
 
@@ -1328,8 +1342,6 @@ def tabela_terminal():
                         wuersz += '{:>10}'.format(str(plane_dict[pentry][26]))            ## delta_tim    ## TIME UNTIL PLANE ARRIVE AT CROS
                         #zapis2 += '<td class="ggtext">+'+str(plane_dict[pentry][26])+'</td>'
 
-                        #countdown_licznik, footer = countdown_s(plane_dict[pentry][26], countdown_licznik)
-
                     elif (-transit_separation_REDALERT_FG < separation_deg < transit_separation_REDALERT_FG):
                         wuersz += '{} {:>6} {}'.format(REDALERT, str(round((plane_dict[pentry][24]-plane_dict[pentry][23]),1)),RESET) ## SEPARACJA
                         #zapis2 += '<td class="rrtext">'+str(round((plane_dict[pentry][24]-plane_dict[pentry][23]),1))+'</td>'
@@ -1343,8 +1355,6 @@ def tabela_terminal():
                         wuersz += '{:>10}'.format(str(plane_dict[pentry][26]))            ## delta_tim    ## TIME UNTIL PLANE ARRIVE AT CROSS POINT
                         #zapis2 += '<td class="rrtext">'+str(plane_dict[pentry][26])+'</td>'
 
-                        #countdown_licznik, footer = countdown_s(plane_dict[pentry][26], countdown_licznik)
-
                     elif (-transit_separation_notignored < separation_deg < transit_separation_notignored):
                         wuersz += '{} {:>6} {}'.format(RED, str(round((plane_dict[pentry][24]-plane_dict[pentry][23]),1)),RESET) ## SEPARACJA
                         #zapis2 += '<td>'+str(round((plane_dict[pentry][24]-plane_dict[pentry][23]),1))+'</td>'
@@ -1357,8 +1367,6 @@ def tabela_terminal():
 
                         wuersz += '{:>10}'.format(str(plane_dict[pentry][26]))            ## delta_tim    ## TIME UNTIL PLANE ARRIVE AT CROSS POINT    
                         #zapis2 += '<td>'+str(plane_dict[pentry][26])+'</td>'
-
-                        #countdown_licznik, footer = countdown_s(plane_dict[pentry][26], countdown_licznik)
 
                     else:
                         wuersz += '{:>8}'.format(str("---"))  ## SEPARACJA
@@ -1976,6 +1984,7 @@ def tabela_html():
                             if (-transit_separation_sound_alert < separation_deg2 < transit_separation_sound_alert):
                                 if (int(moon_tr_sound) == 1) and (int(minimum_alt_transits) < obj_B_alt):
                                     countdown_licznik, footer = countdown_m(plane_dict[pentry][22], countdown_licznik)
+                            #countdown_licznik, footer = countdown_m(plane_dict[pentry][22], countdown_licznik)
                             
                         elif (-transit_separation_REDALERT_FG < separation_deg2 < transit_separation_REDALERT_FG):
                             #wuersz += '{} {:>6} {}'.format(REDALERT, str(round((plane_dict[pentry][19]-plane_dict[pentry][18]),1)),RESET) ## SEPARACJA
@@ -2047,7 +2056,8 @@ def tabela_html():
                             if (-transit_separation_sound_alert < separation_deg < transit_separation_sound_alert):
                                 if (int(sun_tr_sound) == 1) and (int(minimum_alt_transits) < obj_A_alt):
                                     countdown_licznik, footer = countdown_s(plane_dict[pentry][26], countdown_licznik)
-
+                            #countdown_licznik, footer = countdown_s(plane_dict[pentry][26], countdown_licznik)
+                            
                         elif (-transit_separation_REDALERT_FG < separation_deg < transit_separation_REDALERT_FG):
                             #wuersz += '{} {:>6} {}'.format(REDALERT, str(round((plane_dict[pentry][24]-plane_dict[pentry][23]),1)),RESET) ## SEPARACJA
                             zapis2 += '<td class="rrtext">'+str(round((plane_dict[pentry][24]-plane_dict[pentry][23]),1))+'</td>'
@@ -2195,7 +2205,7 @@ def tabela_html():
                     if plane_dict[pentry][5] != "":
                         #wuersz = ''
                         #wuersz += '{} {:>5} {}'.format(RESET, str(plane_dict[pentry][5]), RESET)       ##flight
-                        zapis2 += '<td>'+plane_dict[pentry][5]+'</td>'
+                        zapis2 += '<td>'+str(plane_dict[pentry][5])+'</td>'
 
                     else:    
                         #wuersz += '{} {:>5} {}'.format(RESET, str('---'),RESET)    
@@ -2297,19 +2307,22 @@ def tabela_html():
             #print(dataz[1])
         else:
             dataz=[0.0, 0.0, 0.0]
-
-        if 0 < float(dataz[1]) <= 30:
-            temp_col='class="ctext">'+str(dataz[1])+'C'
-        elif 30 < float(dataz[1]) <= 40:
-            temp_col='class="grtext">'+str(dataz[1])+'C'
-        elif 40 < float(dataz[1]) <= 50:
-            temp_col='class="yrtext">'+str(dataz[1])+'C'
-        elif 50 < float(dataz[1]) <= 60:
-            temp_col='class="otext">'+str(dataz[1])+'C'
-        elif 60 < float(dataz[1]) > 70:
-            temp_col='class="rrtext">'+str(dataz[1])+'C'
+        temperature = int(float(dataz[1]))
+        #print(temperature)
+        if 0 < temperature <= 30:
+            temp_col=' class="ctext">'+str(dataz[1])+'C'
+        elif 30 < temperature <= 40:
+            temp_col=' class="gtext">'+str(dataz[1])+'C'
+        elif 40 < temperature <= 50:
+            temp_col=' class="ytext">'+str(dataz[1])+'C'
+        elif 50 < temperature <= 60:
+            temp_col=' class="otext">'+str(dataz[1])+'C'
+        elif 60 < temperature > 70:
+            temp_col=' class="rrtext">'+str(dataz[1])+'C'
         else:
+            #print("x")
             temp_col='>'+str(dataz[1])+'C'
+
         corearm=round(float(dataz[2])/1000000,0)
         zapis3 = '</table><table style="background-color: #262626;"><th><td>'+last_line_tmp+'</td><td '+str(temp_col)+'</td><td>'+str(corearm)+'MHz</td><td>Load avg: </td><td '+str(load_col)+'</td></th></table>'
 
@@ -2354,9 +2367,9 @@ def print_lastline_html(diff_t):
     lastline+= '<td>'+" --- "+'</td>'
     lastline+= '<td>'+str(int(diff_t))+'</td>'
     if ignore_pressure == 1:
-        lastline+= '<td class="rtext">'+"= "+'</td>' #+ str(pressure)+"hPa"
+        lastline+= '<td class="rtext">'+" = "+str(pressure)+"hPa"+'</td>' #+ str(pressure)+"hPa"
     else:
-        lastline+= '<td class="ytext">'+"* "+'</td>' #+ str(pressure)+"hPa"
+        lastline+= '<td class="ytext">'+" * "+str(pressure)+"hPa"+'</td>' #+ str(pressure)+"hPa"
     if (metar_active == 1 and ignore_pressure == 0):
         lastline+= '<td class="ctext">'+str(pressure)+"hPa"+'</td>'
     elif (metar_active == 0 and ignore_pressure == 1):
@@ -2375,9 +2388,9 @@ def print_lastline(diff_t):
     lastline+= " --- "
     lastline+= str(int(diff_t))
     if ignore_pressure == 1:
-        lastline+= " --- "+RED+"= "+RESET #+ str(pressure)+"hPa"
+        lastline+= " --- "+RED+" = " + str(pressure)+RESET+"hPa"
     else:
-        lastline+= " --- "+YELLOW+"* "+RESET #+ str(pressure)+"hPa"
+        lastline+= " --- "+YELLOW+" * "+ str(pressure)+RESET +"hPa"
     if (metar_active == 1 and ignore_pressure == 0):
         lastline+= CYAN+str(pressure)+RESET+"hPa"+RESET
     elif (metar_active == 0 and ignore_pressure == 1):
@@ -2398,7 +2411,9 @@ obj_A_alt, obj_A_az, obj_B_alt, obj_B_az = tabela_html()
 while True:
     line=sys.stdin.readline()
     aktual_t = datetime.datetime.now()
-
+    if os.path.isfile('/tmp/fw_restart'):
+        print("Restart in few seconds...")
+        sys.exit()
     if line in ['\n', '\r\n']:
         plane_dict.clear()     # remove all entries in dict
         print( '' )
@@ -2490,7 +2505,7 @@ while True:
             if is_int_try(velocity):
                 velocity_kmh = round(int(velocity)*1.852)
             else:
-                velocity = 900
+                velocity_kmh = 900
 
             if (icao not in plane_dict): 
                 plane_dict[icao] = [date_time_local, "", "", "", "", "", "", "", "", "", "", track,  "", "", velocity, [], [], "", "", "", "", "", "", "", "", "", "", "", ""]
